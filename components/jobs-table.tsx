@@ -165,11 +165,23 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
 
   const renderJobRow = (job: Job, showAppliedDate = false) => (
     <TableRow key={job.id}>
-      <TableCell className="font-medium w-[200px] cursor-pointer hover:underline" onClick={() => setEditingJob(job)}>
-        {job.company}
+      <TableCell className="font-medium w-[200px]">
+        <div 
+          className="truncate max-w-[180px] cursor-pointer hover:underline" 
+          onClick={() => setEditingJob(job)} 
+          title={job.company}
+        >
+          {job.company}
+        </div>
       </TableCell>
-      <TableCell className="w-[200px] cursor-pointer hover:underline" onClick={() => setEditingJob(job)}>
-        {job.position}
+      <TableCell className="w-[200px]">
+        <div 
+          className="truncate max-w-[180px] cursor-pointer hover:underline" 
+          onClick={() => setEditingJob(job)} 
+          title={job.position}
+        >
+          {job.position}
+        </div>
       </TableCell>
       <TableCell className="w-[200px]">
         {job.url ? (
@@ -178,6 +190,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-500 hover:underline truncate block max-w-[180px]"
+            title={job.url}
           >
             {job.url}
           </a>
@@ -185,7 +198,11 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
           "—"
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground w-[150px]">{job.salary || "—"}</TableCell>
+      <TableCell className="text-muted-foreground w-[150px]">
+        <div className="truncate max-w-[130px]" title={job.salary || ""}>
+          {job.salary || "—"}
+        </div>
+      </TableCell>
       <TableCell className="w-[120px]">
         <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
           {STATUS_LABELS[job.status]}
@@ -290,7 +307,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             To Apply <span className="text-muted-foreground text-base">({groupedJobs.to_apply.length})</span>
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Company</TableHead>
@@ -315,7 +332,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             Applications <span className="text-muted-foreground text-base">({groupedJobs.applications.length})</span>
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Company</TableHead>
@@ -340,7 +357,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             Rejections <span className="text-muted-foreground text-base">({groupedJobs.rejections.length})</span>
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Company</TableHead>
