@@ -24,14 +24,12 @@ async function checkAuth() {
       autofill()
       return true
     } else {
-      document.getElementById("loginPrompt").style.display = "block"
-      document.getElementById("jobForm").style.display = "none"
+      // Don't block UI on initial load, just return false
+      // We'll prompt for login when they try to add a job
       return false
     }
   } catch (error) {
-    showStatus("error", "Cannot connect to job tracker. Please check API URL.")
-    document.getElementById("loginPrompt").style.display = "block"
-    document.getElementById("jobForm").style.display = "none"
+    // Don't block UI on error
     return false
   }
 }
@@ -120,9 +118,9 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
       document.getElementById("addJobForm").reset()
     } else {
       if (response.status === 401) {
-        showStatus("error", "Session expired. Please log in again.")
-        // Optional: trigger re-auth check
-        // checkAuth() 
+        showStatus("error", "Please log in to your job tracker")
+        document.getElementById("loginPrompt").style.display = "block"
+        document.getElementById("jobForm").style.display = "none"
       } else {
         showStatus("error", data.error || "Failed to add job")
       }
@@ -153,5 +151,7 @@ document.getElementById("settingsLink").addEventListener("click", (e) => {
   }
 })
 
-// Check auth on load
+// Initialize
+document.getElementById("loginPrompt").style.display = "none"
+document.getElementById("jobForm").style.display = "block"
 checkAuth()

@@ -130,7 +130,20 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
     <TableRow key={job.id}>
       <TableCell className="font-medium">{job.company}</TableCell>
       <TableCell>{job.position}</TableCell>
-      <TableCell className="text-muted-foreground">{job.location || "—"}</TableCell>
+      <TableCell>
+        {job.url ? (
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline truncate max-w-[200px] block"
+          >
+            {job.url}
+          </a>
+        ) : (
+          "—"
+        )}
+      </TableCell>
       <TableCell className="text-muted-foreground">{job.salary || "—"}</TableCell>
       <TableCell>
         <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
@@ -243,7 +256,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                 <TableRow>
                   <TableHead>Company</TableHead>
                   <TableHead>Position</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Salary</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -267,7 +280,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                 <TableRow>
                   <TableHead>Company</TableHead>
                   <TableHead>Position</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Salary</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Applied</TableHead>
@@ -292,7 +305,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                 <TableRow>
                   <TableHead>Company</TableHead>
                   <TableHead>Position</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Salary</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Applied</TableHead>

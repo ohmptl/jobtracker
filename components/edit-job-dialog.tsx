@@ -121,25 +121,14 @@ export function EditJobDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                name="location"
-                defaultValue={job.location || ""}
-                placeholder="e.g., San Francisco, CA"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="salary">Salary</Label>
-              <Input id="salary" name="salary" defaultValue={job.salary || ""} placeholder="e.g., $80k-$100k" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="url">Job URL</Label>
               <Input id="url" name="url" type="url" defaultValue={job.url || ""} placeholder="https://..." />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="salary">Salary</Label>
+            <Input id="salary" name="salary" defaultValue={job.salary || ""} placeholder="e.g., $80k-$100k" />
           </div>
 
           <div className="space-y-2">
