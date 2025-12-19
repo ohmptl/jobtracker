@@ -22,6 +22,7 @@ type Job = {
   salary: string | null
   notes: string | null
   resume_url: string | null
+  applied_date: string | null
 }
 
 export function EditJobDialog({
@@ -70,6 +71,7 @@ export function EditJobDialog({
       location: (formData.get("location") as string) || null,
       salary: (formData.get("salary") as string) || null,
       notes: (formData.get("notes") as string) || null,
+      applied_date: (formData.get("applied_date") as string) ? new Date(formData.get("applied_date") as string).toISOString() : null,
       updated_at: new Date().toISOString(),
       resume_url: resumeData,
     }
@@ -131,7 +133,17 @@ export function EditJobDialog({
             <Input id="salary" name="salary" defaultValue={job.salary || ""} placeholder="e.g., $80k-$100k" />
           </div>
 
+          <div className="spapplied_date">Applied Date</Label>
+            <Input 
+              id="applied_date" 
+              name="applied_date" 
+              type="date" 
+              defaultValue={job.applied_date ? new Date(job.applied_date).toISOString().split('T')[0] : ""} 
+            />
+          </div>
+
           <div className="space-y-2">
+            <Label htmlFor="ace-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"

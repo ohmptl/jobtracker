@@ -165,15 +165,19 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
 
   const renderJobRow = (job: Job, showAppliedDate = false) => (
     <TableRow key={job.id}>
-      <TableCell className="font-medium">{job.company}</TableCell>
-      <TableCell>{job.position}</TableCell>
-      <TableCell>
+      <TableCell className="font-medium w-[200px] cursor-pointer hover:underline" onClick={() => setEditingJob(job)}>
+        {job.company}
+      </TableCell>
+      <TableCell className="w-[200px] cursor-pointer hover:underline" onClick={() => setEditingJob(job)}>
+        {job.position}
+      </TableCell>
+      <TableCell className="w-[200px]">
         {job.url ? (
           <a
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline truncate max-w-[200px] block"
+            className="text-blue-500 hover:underline truncate block max-w-[180px]"
           >
             {job.url}
           </a>
@@ -181,18 +185,16 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
           "—"
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground">{job.salary || "—"}</TableCell>
-      <TableCell>
+      <TableCell className="text-muted-foreground w-[150px]">{job.salary || "—"}</TableCell>
+      <TableCell className="w-[120px]">
         <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
           {STATUS_LABELS[job.status]}
         </Badge>
       </TableCell>
-      {showAppliedDate && (
-        <TableCell className="text-muted-foreground">
-          {job.applied_date ? new Date(job.applied_date).toLocaleDateString() : "—"}
-        </TableCell>
-      )}
-      <TableCell>
+      <TableCell className="text-muted-foreground w-[120px]">
+        {job.applied_date ? new Date(job.applied_date).toLocaleDateString() : "—"}
+      </TableCell>
+      <TableCell className="w-[50px]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -291,12 +293,13 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-[200px]">Company</TableHead>
+                  <TableHead className="w-[200px]">Position</TableHead>
+                  <TableHead className="w-[200px]">URL</TableHead>
+                  <TableHead className="w-[150px]">Salary</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>{groupedJobs.to_apply.map((job) => renderJobRow(job, false))}</TableBody>
@@ -315,13 +318,13 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-[200px]">Company</TableHead>
+                  <TableHead className="w-[200px]">Position</TableHead>
+                  <TableHead className="w-[200px]">URL</TableHead>
+                  <TableHead className="w-[150px]">Salary</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>{groupedJobs.applications.map((job) => renderJobRow(job, true))}</TableBody>
@@ -340,13 +343,13 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-[200px]">Company</TableHead>
+                  <TableHead className="w-[200px]">Position</TableHead>
+                  <TableHead className="w-[200px]">URL</TableHead>
+                  <TableHead className="w-[150px]">Salary</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>{groupedJobs.rejections.map((job) => renderJobRow(job, true))}</TableBody>
