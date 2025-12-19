@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    .header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .settings-link {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .settings-link a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    .settings-link a:hover {
+      text-decoration: underline;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #1a1a1a;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #0066cc;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d1fae5;
+      color: #065f46;
+      display: block;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+      display: block;
+    }
+
+    .status.info {
+      background: #dbeafe;
+      color: #1e40af;
+      display: block;
+    }
+
+    .login-prompt {
+      display: none;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .login-prompt p {
+      margin-bottom: 16px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .login-prompt button {
+      width: 100%;
+    }
+
+    .required {
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Job Tracker</h1>
+      <div class="settings-link">
+        <a href="#" id="settingsLink">Configure API URL</a>
+      </div>
+    </div>
+
+    <div id="loginPrompt" class="login-prompt">
+      <p>Please log in to your job tracker account first</p>
+      <button class="btn-primary" id="openDashboard">Open Job Tracker</button>
+    </div>
+
+    <div id="jobForm">
+      <div id="status" class="status"></div>
+
+      <form id="addJobForm">
+        <div class="form-group">
+          <label for="company">Company <span class="required">*</span></label>
+          <input type="text" id="company" name="company" required>
+        </div>
+
+        <div class="form-group">
+          <label for="position">Position <span class="required">*</span></label>
+          <input type="text" id="position" name="position" required>
+        </div>
+
+        <div class="form-group">
+          <label for="url">Job URL</label>
+          <input type="url" id="url" name="url">
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" name="location" placeholder="e.g., San Francisco, CA">
+        </div>
+
+        <div class="form-group">
+          <label for="salary">Salary</label>
+          <input type="text" id="salary" name="salary" placeholder="e.g., $80k-$100k">
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" placeholder="Any additional notes..."></textarea>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" id="autofillBtn">Auto-fill</button>
+          <button type="submit" class="btn-primary" id="submitBtn">Add to Tracker</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
