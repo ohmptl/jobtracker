@@ -133,7 +133,8 @@ export function EditJobDialog({
             <Input id="salary" name="salary" defaultValue={job.salary || ""} placeholder="e.g., $80k-$100k" />
           </div>
 
-          <div className="spapplied_date">Applied Date</Label>
+          <div className="space-y-2">
+            <Label htmlFor="applied_date">Applied Date</Label>
             <Input 
               id="applied_date" 
               name="applied_date" 
@@ -143,7 +144,6 @@ export function EditJobDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="ace-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
