@@ -64,12 +64,6 @@ async function autofill() {
         if (response.data.position) {
           document.getElementById("position").value = response.data.position
         }
-        if (response.data.location) {
-          document.getElementById("location").value = response.data.location
-        }
-        if (response.data.salary) {
-          document.getElementById("salary").value = response.data.salary
-        }
         showStatus("success", "Auto-filled from page!")
       } else {
         // Just fill the URL if extraction failed
@@ -96,8 +90,6 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
     company: document.getElementById("company").value,
     position: document.getElementById("position").value,
     url: document.getElementById("url").value || null,
-    location: document.getElementById("location").value || null,
-    salary: document.getElementById("salary").value || null,
     notes: document.getElementById("notes").value || null,
   }
 
