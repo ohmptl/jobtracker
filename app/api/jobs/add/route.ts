@@ -12,24 +12,23 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders(request) })
     }
 
     const body = await request.json()
     const { company, position, url, location, salary, notes } = body
 
-    // Validate required fields
-    if (!company || !position) {
-      return NextResponse.json({ error: "Company and position are required" }, { status: 400 })
-    }
+    // Use default values if company or position are missing
+    const finalCompany = company || "Unknown Company"
+    const finalPosition = position || "Unknown Position"
 
     // Insert job with to_apply status
     const { data, error } = await supabase
       .from("jobs")
       .insert({
         user_id: user.id,
-        company,
-        position,
+        company: finalCompany,
+        position: finalPosition,
         status: "to_apply",
         url: url || null,
         location: location || null,
@@ -40,23 +39,29 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders(request) })
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 })
+    return NextResponse.json({ success: true, data }, { status: 201, headers: corsHeaders(request) })
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500, headers: corsHeaders(request) })
+  }
+}
+
+function corsHeaders(request: Request) {
+  const origin = request.headers.get("origin")
+  return {
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
   }
 }
 
 // Allow OPTIONS for CORS preflight
-export async function OPTIONS() {
+export async function OPTIONS(request: Request) {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
+    headers: corsHeaders(request),
   })
 }

@@ -1,5 +1,4 @@
 // Import the chrome variable
-const chrome = window.chrome
 
 const API_URL_KEY = "jobTrackerApiUrl"
 const DEFAULT_API_URL = "http://localhost:3000"
@@ -22,6 +21,7 @@ async function checkAuth() {
     if (data.authenticated) {
       document.getElementById("loginPrompt").style.display = "none"
       document.getElementById("jobForm").style.display = "block"
+      autofill()
       return true
     } else {
       document.getElementById("loginPrompt").style.display = "block"
@@ -50,8 +50,7 @@ function showStatus(type, message) {
   }
 }
 
-// Auto-fill form from current page
-document.getElementById("autofillBtn").addEventListener("click", async () => {
+async function autofill() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
@@ -82,7 +81,10 @@ document.getElementById("autofillBtn").addEventListener("click", async () => {
   } catch (error) {
     showStatus("error", "Could not auto-fill from this page")
   }
-})
+}
+
+// Auto-fill form from current page
+document.getElementById("autofillBtn").addEventListener("click", autofill)
 
 // Handle form submission
 document.getElementById("addJobForm").addEventListener("submit", async (e) => {
@@ -118,8 +120,9 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
       document.getElementById("addJobForm").reset()
     } else {
       if (response.status === 401) {
-        showStatus("error", "Please log in to your job tracker")
-        await checkAuth()
+        showStatus("error", "Session expired. Please log in again.")
+        // Optional: trigger re-auth check
+        // checkAuth() 
       } else {
         showStatus("error", data.error || "Failed to add job")
       }

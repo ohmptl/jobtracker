@@ -10,7 +10,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Job Tracker - Manage Your Applications",
   description: "Track your job applications and internships in one place",
-  generator: "v0.app",
   icons: {
     icon: [
       {

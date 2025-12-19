@@ -1,7 +1,6 @@
 // Background service worker
 
 // Listen for extension installation
-const chrome = window.chrome // Declare the chrome variable
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Job Tracker Extension installed")
 })

@@ -26,11 +26,11 @@ Run the SQL scripts in order in your Supabase project:
 2. `scripts/002_add_resume_column.sql` - Adds resume storage column
 3. `scripts/003_setup_storage.sql` - Sets up Supabase Storage bucket for resumes
 
-You can run these directly from the v0 interface by executing them in the scripts folder.
+You can run these directly in your Supabase SQL editor.
 
 ### 2. Environment Variables
 
-The following environment variables are already configured in your v0 project:
+The following environment variables need to be configured in your project:
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`

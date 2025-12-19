@@ -1,7 +1,5 @@
 // Content script to extract job information from the current page
 
-const chrome = window.chrome
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractJobInfo") {
     const jobInfo = extractJobInformation()
@@ -25,6 +23,10 @@ function extractJobInformation() {
     "[data-company]",
     ".company-name",
     ".employer-name",
+    ".topcard__org-name-link", // LinkedIn
+    ".job-details-jobs-header__company-url", // LinkedIn
+    '[data-test="employer-name"]', // Glassdoor
+    '[data-testid="company-name"]', // Indeed
   ]
 
   for (const selector of companySelectors) {
@@ -42,6 +44,10 @@ function extractJobInformation() {
     "[data-job-title]",
     ".job-title",
     'meta[property="og:title"]',
+    ".top-card-layout__title", // LinkedIn
+    ".job-details-jobs-header__job-title", // LinkedIn
+    '[data-test="job-title"]', // Glassdoor
+    '[data-testid="job-title"]', // Indeed
   ]
 
   for (const selector of positionSelectors) {
@@ -49,6 +55,22 @@ function extractJobInformation() {
     if (element) {
       info.position = element.getAttribute("content") || element.textContent.trim()
       if (info.position) break
+    }
+  }
+
+  // Fallback for position if nothing found: use document title
+  if (!info.position) {
+    const title = document.title
+    // Often titles are "Position at Company" or "Position | Company"
+    const separators = [" at ", " | ", " - ", " – "]
+    for (const sep of separators) {
+      if (title.includes(sep)) {
+        info.position = title.split(sep)[0].trim()
+        break
+      }
+    }
+    if (!info.position) {
+      info.position = title // Last resort
     }
   }
 
