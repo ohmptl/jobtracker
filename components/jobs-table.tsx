@@ -198,11 +198,6 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
           "—"
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground w-[150px]">
-        <div className="truncate max-w-[130px]" title={job.salary || ""}>
-          {job.salary || "—"}
-        </div>
-      </TableCell>
       <TableCell className="w-[120px]">
         <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
           {STATUS_LABELS[job.status]}
@@ -313,7 +308,6 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[200px]">Company</TableHead>
                   <TableHead className="w-[200px]">Position</TableHead>
                   <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[150px]">Salary</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[120px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -338,7 +332,6 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[200px]">Company</TableHead>
                   <TableHead className="w-[200px]">Position</TableHead>
                   <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[150px]">Salary</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[120px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -363,7 +356,6 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[200px]">Company</TableHead>
                   <TableHead className="w-[200px]">Position</TableHead>
                   <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[150px]">Salary</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[120px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
