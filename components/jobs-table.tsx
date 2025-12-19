@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,6 +59,43 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
   const [sortBy, setSortBy] = useState<"date" | "company" | "position">("date")
   const router = useRouter()
   const supabase = createClient()
+
+  // Sync jobs with initialJobs when it changes (e.g. after router.refresh())
+  useEffect(() => {
+    setJobs(initialJobs)
+  }, [initialJobs])
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-jobs")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+        },
+        (payload) => {
+          router.refresh()
+          
+          if (payload.eventType === "INSERT") {
+            setJobs((current) => [payload.new as Job, ...current])
+          } else if (payload.eventType === "UPDATE") {
+            setJobs((current) =>
+              current.map((job) => (job.id === payload.new.id ? (payload.new as Job) : job))
+            )
+          } else if (payload.eventType === "DELETE") {
+            setJobs((current) => current.filter((job) => job.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, router])
 
   const deleteJob = async (id: string) => {
     const { error } = await supabase.from("jobs").delete().eq("id", id)
