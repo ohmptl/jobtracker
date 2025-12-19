@@ -165,31 +165,31 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
 
   const renderJobRow = (job: Job, showAppliedDate = false) => (
     <TableRow key={job.id}>
-      <TableCell className="font-medium w-[200px]">
+      <TableCell className="font-medium w-[150px]">
         <div 
-          className="truncate max-w-[180px] cursor-pointer hover:underline" 
+          className="truncate max-w-[130px] cursor-pointer hover:underline" 
           onClick={() => setEditingJob(job)} 
           title={job.company}
         >
           {job.company}
         </div>
       </TableCell>
-      <TableCell className="w-[200px]">
+      <TableCell className="w-[300px]">
         <div 
-          className="truncate max-w-[180px] cursor-pointer hover:underline" 
+          className="truncate max-w-[280px] cursor-pointer hover:underline" 
           onClick={() => setEditingJob(job)} 
           title={job.position}
         >
           {job.position}
         </div>
       </TableCell>
-      <TableCell className="w-[200px]">
+      <TableCell className="w-[150px]">
         {job.url ? (
           <a
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline truncate block max-w-[180px]"
+            className="text-blue-500 hover:underline truncate block max-w-[130px]"
             title={job.url}
           >
             {job.url}
@@ -198,12 +198,12 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
           "—"
         )}
       </TableCell>
-      <TableCell className="w-[120px]">
+      <TableCell className="w-[100px]">
         <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
           {STATUS_LABELS[job.status]}
         </Badge>
       </TableCell>
-      <TableCell className="text-muted-foreground w-[120px]">
+      <TableCell className="text-muted-foreground w-[100px]">
         {job.applied_date ? new Date(job.applied_date).toLocaleDateString() : "—"}
       </TableCell>
       <TableCell className="w-[50px]">
@@ -305,11 +305,11 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Company</TableHead>
-                  <TableHead className="w-[200px]">Position</TableHead>
-                  <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[150px]">Company</TableHead>
+                  <TableHead className="w-[300px]">Position</TableHead>
+                  <TableHead className="w-[150px]">URL</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[100px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -329,11 +329,11 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Company</TableHead>
-                  <TableHead className="w-[200px]">Position</TableHead>
-                  <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[150px]">Company</TableHead>
+                  <TableHead className="w-[300px]">Position</TableHead>
+                  <TableHead className="w-[150px]">URL</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[100px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -353,11 +353,11 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Company</TableHead>
-                  <TableHead className="w-[200px]">Position</TableHead>
-                  <TableHead className="w-[200px]">URL</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px]">Applied</TableHead>
+                  <TableHead className="w-[150px]">Company</TableHead>
+                  <TableHead className="w-[300px]">Position</TableHead>
+                  <TableHead className="w-[150px]">URL</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[100px]">Applied</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
