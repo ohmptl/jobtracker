@@ -5,7 +5,7 @@ import { AddJobDialog } from "@/components/add-job-dialog"
 import { LogoutButton } from "@/components/logout-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
-import { BarChart3 } from "lucide-react"
+import { BarChart3, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default async function DashboardPage() {
@@ -29,7 +29,10 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Job Tracker</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2">
+            <Briefcase className="h-6 w-6" />
+            Job Tracker
+          </h1>
           <div className="flex items-center gap-3">
             <Link href="/dashboard/statistics">
               <Button variant="outline" size="sm">
