@@ -14,6 +14,25 @@ function extractJobInformation() {
     position: null,
     location: null,
     salary: null,
+    description: null,
+    pageTitle: document.title,
+  }
+
+  // Prefer the structured JobPosting data published by the job board.
+  for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const parsed = JSON.parse(script.textContent)
+      const entries = Array.isArray(parsed) ? parsed : parsed["@graph"] || [parsed]
+      const posting = entries.find((entry) => entry?.["@type"] === "JobPosting")
+      if (!posting) continue
+      info.company ||= posting.hiringOrganization?.name || null
+      info.position ||= posting.title || null
+      info.location ||= posting.jobLocation?.address?.addressLocality || posting.jobLocationType || null
+      info.description ||= htmlToText(posting.description || "").slice(0, 12000) || null
+      break
+    } catch {
+      // Ignore malformed structured data and continue with DOM selectors.
+    }
   }
 
   // Try to extract company name
@@ -103,5 +122,18 @@ function extractJobInformation() {
     }
   }
 
+  if (!info.description) {
+    const description = document.querySelector(
+      '[class*="job-description" i], [id*="job-description" i], [data-testid*="job-description" i], .description__text',
+    )
+    info.description = description?.textContent?.trim().slice(0, 12000) || null
+  }
+
   return info
+}
+
+function htmlToText(value) {
+  const element = document.createElement("div")
+  element.innerHTML = value
+  return element.textContent?.trim() || ""
 }

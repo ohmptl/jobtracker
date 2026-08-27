@@ -49,29 +49,63 @@ function showStatus(type, message) {
 }
 
 async function autofill() {
+  const autofillBtn = document.getElementById("autofillBtn")
   try {
+    autofillBtn.disabled = true
+    autofillBtn.textContent = "Analyzing..."
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
-    // Get current URL
     document.getElementById("url").value = tab.url
 
-    // Try to extract job info from page
-    chrome.tabs.sendMessage(tab.id, { action: "extractJobInfo" }, (response) => {
-      if (response && response.success) {
-        if (response.data.company) {
-          document.getElementById("company").value = response.data.company
-        }
-        if (response.data.position) {
-          document.getElementById("position").value = response.data.position
-        }
-        showStatus("success", "Auto-filled from page!")
-      } else {
-        // Just fill the URL if extraction failed
-        showStatus("info", "Could not auto-detect job details. URL filled.")
-      }
+    const response = await new Promise((resolve) => {
+      chrome.tabs.sendMessage(tab.id, { action: "extractJobInfo" }, (result) => {
+        if (chrome.runtime.lastError) return resolve(null)
+        resolve(result)
+      })
     })
+
+    if (!response?.success) {
+      showStatus("info", "This page could not be read. URL filled.")
+      return
+    }
+
+    fillFields(response.data)
+    const aiResponse = await fetch(`${apiUrl}/api/jobs/parse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        url: tab.url,
+        title: response.data.pageTitle,
+        extracted: {
+          company: response.data.company,
+          position: response.data.position,
+          location: response.data.location,
+          salary: response.data.salary,
+          description: response.data.description,
+        },
+      }),
+    })
+
+    if (aiResponse.ok) {
+      const result = await aiResponse.json()
+      fillFields(result.data)
+      showStatus("success", "Job details parsed with AI")
+    } else {
+      showStatus("info", "Used local parsing. Configure Gemini on the server for AI parsing.")
+    }
   } catch {
     showStatus("error", "Could not auto-fill from this page")
+  } finally {
+    autofillBtn.disabled = false
+    autofillBtn.textContent = "AI auto-fill"
+  }
+}
+
+function fillFields(data) {
+  const mapping = { company: "company", position: "position", location: "location", salary: "salary", summary: "notes" }
+  for (const [field, elementId] of Object.entries(mapping)) {
+    if (data?.[field]) document.getElementById(elementId).value = data[field]
   }
 }
 
@@ -90,6 +124,8 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
     company: document.getElementById("company").value,
     position: document.getElementById("position").value,
     url: document.getElementById("url").value || null,
+    location: document.getElementById("location").value || null,
+    salary: document.getElementById("salary").value || null,
     notes: document.getElementById("notes").value || null,
   }
 

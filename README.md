@@ -1,6 +1,6 @@
 # Job Tracker Web App
 
-A minimal, clean job application tracker to help you manage your internship and job applications.
+A job application and research pipeline built for both people and AI agents.
 
 ## Features
 
@@ -15,6 +15,10 @@ A minimal, clean job application tracker to help you manage your internship and 
 - **Resume Upload**: Attach your resume to each application (PDF, DOC, DOCX)
 - **Statistics Page**: Track your application metrics and insights
 - **Browser Extension**: Quickly add jobs while browsing (Chrome)
+- **Research Queue**: Keep agent-discovered roles separate until you approve them
+- **Agent API**: Revocable API keys, bulk ingestion, deduplication, saved filters, and OpenAPI discovery
+- **AI Parsing**: Optional server-side Gemini parsing for the browser extension
+- **Responsive Sidebar**: Unified navigation across applications, research, statistics, and settings
 
 ## Setup Instructions
 
@@ -25,6 +29,7 @@ Run the SQL scripts in order in your Supabase project:
 1. `scripts/001_create_tables.sql` - Creates the jobs table with RLS policies
 2. `scripts/002_add_resume_column.sql` - Adds resume storage column
 3. `scripts/003_setup_storage.sql` - Sets up Supabase Storage bucket for resumes
+4. `scripts/004_agent_research.sql` - Adds the research queue metadata, filters, and agent API keys
 
 You can run these directly in your Supabase SQL editor.
 
@@ -32,13 +37,24 @@ You can run these directly in your Supabase SQL editor.
 
 The following environment variables need to be configured in your project:
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only, required for the agent API)
+- `GEMINI_API_KEY` (server-only, optional, enables extension AI parsing)
+- `GEMINI_MODEL` (optional, defaults to `gemini-2.5-flash`)
 
-### 3. Browser Extension Setup
+Copy `.env.example` to `.env.local` and fill in the values. Never expose the service-role or Gemini keys through `NEXT_PUBLIC_` variables.
+
+### 3. Agent API
+
+1. Open **Agent settings** in the dashboard.
+2. Save your research filters.
+3. Create an API key and copy it immediately; only its hash is stored.
+4. Give the agent the OpenAPI URL shown on the page (`/api/v1/openapi`) and the key.
+
+Agent requests use `Authorization: Bearer jt_live_...`. A typical research run first calls `GET /api/v1/research-profile`, researches matching roles, then sends up to 100 roles to `POST /api/v1/jobs`. Duplicate URLs are skipped and new roles enter the `researched` queue.
+
+### 4. Browser Extension Setup
 
 To use the Chrome extension:
 
@@ -91,7 +107,7 @@ You can upload resumes for each application. Files are stored securely in Supaba
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **Storage**: Supabase Storage
@@ -122,7 +138,8 @@ You can upload resumes for each application. Files are stored securely in Supaba
 ## Browser Extension Features
 
 The extension includes:
-- Auto-detection of job details from popular job boards
+- AI-assisted normalization through a server-side Gemini integration
+- Privacy-scoped extraction of JobPosting JSON-LD and known description elements
 - Quick add button with pre-filled information
 - Manual entry option for any job posting
 - Direct integration with your job tracker

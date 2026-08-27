@@ -2,11 +2,6 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { JobsTable } from "@/components/jobs-table"
 import { AddJobDialog } from "@/components/add-job-dialog"
-import { LogoutButton } from "@/components/logout-button"
-import { ThemeToggle } from "@/components/theme-toggle"
-import Link from "next/link"
-import { BarChart3, Briefcase } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -23,32 +18,19 @@ export default async function DashboardPage() {
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
+    .not("status", "in", "(researched,dismissed)")
     .order("created_at", { ascending: false })
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Briefcase className="h-6 w-6" />
-            Job Tracker
-          </h1>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/statistics">
-              <Button variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Statistics
-              </Button>
-            </Link>
-            <AddJobDialog />
-            <ThemeToggle />
-            <LogoutButton />
-          </div>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Applications</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage roles you plan to apply to and track their progress.</p>
         </div>
-      </header>
-      <main className="container mx-auto px-4 py-8">
-        <JobsTable initialJobs={jobs ?? []} />
-      </main>
+        <AddJobDialog />
+      </div>
+      <JobsTable initialJobs={jobs ?? []} />
     </div>
   )
 }

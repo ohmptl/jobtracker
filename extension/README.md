@@ -5,7 +5,8 @@ A browser extension to quickly add job postings to your job tracker application.
 ## Features
 
 - Quick job addition from any webpage
-- Auto-fill job details from the current page
+- AI-assisted parsing through your Job Tracker server
+- Local structured-data and selector fallback when AI is unavailable
 - Manual entry for complete control
 - Supports custom API URL configuration
 - Works with Chrome, Edge, and other Chromium-based browsers
@@ -34,7 +35,7 @@ A browser extension to quickly add job postings to your job tracker application.
 
 1. Navigate to a job posting page
 2. Click the extension icon
-3. Click "Auto-fill" to extract job details from the page
+3. Click "AI auto-fill" to extract and normalize job details
 4. Review and edit the information
 5. Click "Add to Tracker"
 
@@ -71,9 +72,9 @@ The extension works on any website, but auto-fill works best on popular job boar
 ## Privacy
 
 This extension:
-- Only sends data to your configured Job Tracker URL
+- Sends only the current job URL, title, extracted job fields, and job-description text to your configured Job Tracker URL
+- Uses the server's Gemini configuration when AI parsing is enabled; the Gemini key is never stored in the extension
 - Does not collect or share any personal information
-- Runs entirely locally with your own backend
 - Requires explicit permission to access page content
 
 ## Support
