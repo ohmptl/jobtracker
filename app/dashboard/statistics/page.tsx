@@ -225,7 +225,7 @@ export default async function StatisticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Top Companies</CardTitle>
-              <CardDescription>Companies you've applied to most</CardDescription>
+              <CardDescription>Companies you&apos;ve applied to most</CardDescription>
             </CardHeader>
             <CardContent>
               {topCompanies.length > 0 ? (

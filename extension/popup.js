@@ -28,7 +28,7 @@ async function checkAuth() {
       // We'll prompt for login when they try to add a job
       return false
     }
-  } catch (error) {
+  } catch {
     // Don't block UI on error
     return false
   }
@@ -70,7 +70,7 @@ async function autofill() {
         showStatus("info", "Could not auto-detect job details. URL filled.")
       }
     })
-  } catch (error) {
+  } catch {
     showStatus("error", "Could not auto-fill from this page")
   }
 }
@@ -117,7 +117,7 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
         showStatus("error", data.error || "Failed to add job")
       }
     }
-  } catch (error) {
+  } catch {
     showStatus("error", "Failed to connect to job tracker")
   } finally {
     submitBtn.disabled = false

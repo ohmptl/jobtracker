@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     redirect("/auth/login")
   }
 
-  const { data: jobs = [] } = await supabase
+  const { data: jobs } = await supabase
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
-        <JobsTable initialJobs={jobs} />
+        <JobsTable initialJobs={jobs ?? []} />
       </main>
     </div>
   )

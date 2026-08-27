@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       },
       { status: 200, headers: corsHeaders(request) },
     )
-  } catch (error) {
+  } catch {
     return NextResponse.json({ authenticated: false }, { status: 200, headers: corsHeaders(request) })
   }
 }

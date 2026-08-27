@@ -12,7 +12,7 @@ chrome.contextMenus.create({
   contexts: ["page", "link"],
 })
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === "addToJobTracker") {
     chrome.action.openPopup()
   }

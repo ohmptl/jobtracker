@@ -9,7 +9,7 @@ export default function SignUpSuccessPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>We've sent you a confirmation link</CardDescription>
+            <CardDescription>We&apos;ve sent you a confirmation link</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">

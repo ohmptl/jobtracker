@@ -51,19 +51,13 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: "Accepted",
 }
 
-export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
-  const [jobs, setJobs] = useState(initialJobs)
+export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   const [editingJob, setEditingJob] = useState<Job | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"date" | "company" | "position">("date")
   const router = useRouter()
-  const supabase = createClient()
-
-  // Sync jobs with initialJobs when it changes (e.g. after router.refresh())
-  useEffect(() => {
-    setJobs(initialJobs)
-  }, [initialJobs])
+  const [supabase] = useState(() => createClient())
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -76,18 +70,8 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
           schema: "public",
           table: "jobs",
         },
-        (payload) => {
+        () => {
           router.refresh()
-          
-          if (payload.eventType === "INSERT") {
-            setJobs((current) => [payload.new as Job, ...current])
-          } else if (payload.eventType === "UPDATE") {
-            setJobs((current) =>
-              current.map((job) => (job.id === payload.new.id ? (payload.new as Job) : job))
-            )
-          } else if (payload.eventType === "DELETE") {
-            setJobs((current) => current.filter((job) => job.id !== payload.old.id))
-          }
         }
       )
       .subscribe()
@@ -100,7 +84,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
   const deleteJob = async (id: string) => {
     const { error } = await supabase.from("jobs").delete().eq("id", id)
     if (!error) {
-      setJobs(jobs.filter((job) => job.id !== id))
+      router.refresh()
     }
   }
 
@@ -113,10 +97,6 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
     const { error } = await supabase.from("jobs").update(updates).eq("id", id)
     if (!error) {
       router.refresh()
-      const { data } = await supabase.from("jobs").select("*").eq("id", id).single()
-      if (data) {
-        setJobs(jobs.map((job) => (job.id === id ? data : job)))
-      }
     }
   }
 
@@ -163,7 +143,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
     rejections: filteredAndSortedJobs.filter((job) => job.status === "rejected"),
   }
 
-  const renderJobRow = (job: Job, showAppliedDate = false) => (
+  const renderJobRow = (job: Job) => (
     <TableRow key={job.id}>
       <TableCell className="font-medium w-[150px]">
         <div 
@@ -313,7 +293,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>{groupedJobs.to_apply.map((job) => renderJobRow(job, false))}</TableBody>
+              <TableBody>{groupedJobs.to_apply.map(renderJobRow)}</TableBody>
             </Table>
           </div>
         </div>
@@ -337,7 +317,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>{groupedJobs.applications.map((job) => renderJobRow(job, true))}</TableBody>
+              <TableBody>{groupedJobs.applications.map(renderJobRow)}</TableBody>
             </Table>
           </div>
         </div>
@@ -361,7 +341,7 @@ export function JobsTable({ initialJobs }: { initialJobs: Job[] }) {
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>{groupedJobs.rejections.map((job) => renderJobRow(job, true))}</TableBody>
+              <TableBody>{groupedJobs.rejections.map(renderJobRow)}</TableBody>
             </Table>
           </div>
         </div>
