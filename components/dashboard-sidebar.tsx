@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { BarChart3, BriefcaseBusiness, Menu, Search, Settings, X } from "lucide-react"
+import { BarChart3, BriefcaseBusiness, Menu, Plug, Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
@@ -11,9 +11,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 const navigation = [
   { href: "/dashboard", label: "Applications", icon: BriefcaseBusiness, exact: true },
-  { href: "/dashboard/research", label: "Research queue", icon: Search },
+  { href: "/dashboard/research", label: "Jobs Found", icon: Search },
   { href: "/dashboard/statistics", label: "Statistics", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "Agent settings", icon: Settings },
+  { href: "/dashboard/settings", label: "MCP connection", icon: Plug },
 ]
 
 export function DashboardSidebar({ email }: { email?: string }) {

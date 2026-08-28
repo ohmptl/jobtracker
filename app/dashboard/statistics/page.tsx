@@ -28,7 +28,7 @@ export default async function StatisticsPage() {
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
-    .not("status", "in", "(researched,dismissed)")) as { data: Job[] }
+    .not("status", "in", "(jobs_found,dismissed)")) as { data: Job[] }
 
   // Calculate statistics
   const totalJobs = jobs.length

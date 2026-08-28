@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { ResearchedJobsList, type ResearchedJob } from "@/components/researched-jobs-list"
+import { JobsFoundList, type FoundJob } from "@/components/jobs-found-list"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function ResearchPage() {
@@ -9,23 +9,20 @@ export default async function ResearchPage() {
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select(
-      "id,company,position,url,location,salary,notes,job_description,source,match_score,match_reasons,discovered_at",
-    )
+    .select("id,company,position,url,location,salary,notes")
     .eq("user_id", data.user.id)
-    .eq("status", "researched")
-    .order("match_score", { ascending: false, nullsFirst: false })
-    .order("discovered_at", { ascending: false })
+    .eq("status", "jobs_found")
+    .order("created_at", { ascending: false })
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Research queue</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Jobs Found</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Review roles discovered by your agents before adding them to your application pipeline.
+          Review roles ChatGPT found before moving them into your application pipeline.
         </p>
       </div>
-      <ResearchedJobsList initialJobs={(jobs || []) as ResearchedJob[]} />
+      <JobsFoundList initialJobs={(jobs || []) as FoundJob[]} />
     </div>
   )
 }

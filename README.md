@@ -1,6 +1,6 @@
 # Job Tracker Web App
 
-A job application and research pipeline built for both people and AI agents.
+A personal job application tracker with a small MCP server for ChatGPT.
 
 ## Features
 
@@ -15,8 +15,8 @@ A job application and research pipeline built for both people and AI agents.
 - **Resume Upload**: Attach your resume to each application (PDF, DOC, DOCX)
 - **Statistics Page**: Track your application metrics and insights
 - **Browser Extension**: Quickly add jobs while browsing (Chrome)
-- **Research Queue**: Keep agent-discovered roles separate until you approve them
-- **Agent API**: Revocable API keys, bulk ingestion, deduplication, saved filters, and OpenAPI discovery
+- **Jobs Found**: Keep ChatGPT-discovered roles separate until you approve them
+- **MCP Server**: Let ChatGPT list, add, and update jobs directly
 - **AI Parsing**: Optional server-side Gemini parsing for the browser extension
 - **Responsive Sidebar**: Unified navigation across applications, research, statistics, and settings
 
@@ -24,14 +24,9 @@ A job application and research pipeline built for both people and AI agents.
 
 ### 1. Database Setup
 
-Run the SQL scripts in order in your Supabase project:
+Run `scripts/000_master_setup.sql` in the Supabase SQL editor.
 
-1. `scripts/001_create_tables.sql` - Creates the jobs table with RLS policies
-2. `scripts/002_add_resume_column.sql` - Adds resume storage column
-3. `scripts/003_setup_storage.sql` - Sets up Supabase Storage bucket for resumes
-4. `scripts/004_agent_research.sql` - Adds the research queue metadata, filters, and agent API keys
-
-You can run these directly in your Supabase SQL editor.
+The first successful run deletes old Job Tracker data and obsolete application tables, then creates the current schema. Your Supabase Auth user is preserved. A persistent migration marker makes later runs non-destructive: rerunning the same script only adds missing schema and refreshes indexes, policies, and triggers.
 
 ### 2. Environment Variables
 
@@ -39,20 +34,25 @@ The following environment variables need to be configured in your project:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only, required for the agent API)
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only, used by MCP)
+- `MCP_USER_ID` (your Supabase Auth user UUID)
+- `MCP_SECRET` (a random secret of at least 32 characters)
 - `GEMINI_API_KEY` (server-only, optional, enables extension AI parsing)
 - `GEMINI_MODEL` (optional, defaults to `gemini-2.5-flash`)
 
 Copy `.env.example` to `.env.local` and fill in the values. Never expose the service-role or Gemini keys through `NEXT_PUBLIC_` variables.
 
-### 3. Agent API
+### 3. ChatGPT MCP Connection
 
-1. Open **Agent settings** in the dashboard.
-2. Save your research filters.
-3. Create an API key and copy it immediately; only its hash is stored.
-4. Give the agent the OpenAPI URL shown on the page (`/api/v1/openapi`) and the key.
+1. Deploy the application to a public HTTPS URL.
+2. Open **MCP connection** in the dashboard and copy the private MCP URL.
+3. In ChatGPT, enable developer mode and create an MCP connection using that URL.
+4. Confirm that ChatGPT discovers `list_jobs`, `add_job_found`, and `update_job`.
+5. Test your research prompt manually, then schedule it in ChatGPT with the MCP connection enabled.
 
-Agent requests use `Authorization: Bearer jt_live_...`. A typical research run first calls `GET /api/v1/research-profile`, researches matching roles, then sends up to 100 roles to `POST /api/v1/jobs`. Duplicate URLs are skipped and new roles enter the `researched` queue.
+The application stores no research filters, agent prompts, or schedules. Those remain in ChatGPT. The private URL is a single-user capability URL; rotate `MCP_SECRET` to revoke it. For a shared or public application, replace this with OAuth 2.1.
+
+The endpoint implements MCP Streamable HTTP through the official TypeScript SDK. Test it locally with MCP Inspector using `http://localhost:3000/mcp/<your-secret>`.
 
 ### 4. Browser Extension Setup
 
@@ -121,7 +121,8 @@ You can upload resumes for each application. Files are stored securely in Supaba
 ├── app/
 │   ├── auth/              # Authentication pages
 │   ├── dashboard/         # Main dashboard and statistics
-│   └── api/              # API routes for browser extension
+│   ├── api/               # Internal routes used by the browser extension
+│   └── mcp/               # ChatGPT MCP endpoint
 ├── components/           # React components
 │   ├── ui/              # shadcn/ui components
 │   ├── jobs-table.tsx   # Main jobs table with filtering

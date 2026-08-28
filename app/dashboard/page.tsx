@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
-    .not("status", "in", "(researched,dismissed)")
+    .not("status", "in", "(jobs_found,dismissed)")
     .order("created_at", { ascending: false })
 
   return (
