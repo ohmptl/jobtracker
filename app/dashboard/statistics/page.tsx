@@ -8,7 +8,7 @@ type Job = {
   id: string
   status: string
   applied_date: string | null
-  created_at: string
+  added_date: string
   company: string
 }
 
@@ -28,7 +28,7 @@ export default async function StatisticsPage() {
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
-    .not("status", "in", "(jobs_found,dismissed)")) as { data: Job[] }
+    .not("status", "in", "(jobs_found,jobs_snoozed,jobs_deleted)")) as { data: Job[] }
 
   // Calculate statistics
   const totalJobs = jobs.length

@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 const navigation = [
   { href: "/dashboard", label: "Applications", icon: BriefcaseBusiness, exact: true },
-  { href: "/dashboard/research", label: "Jobs Found", icon: Search },
+  { href: "/dashboard/research", label: "AI Jobs Found", icon: Search },
   { href: "/dashboard/statistics", label: "Statistics", icon: BarChart3 },
   { href: "/dashboard/settings", label: "MCP connection", icon: Plug },
 ]

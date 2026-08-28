@@ -18,8 +18,8 @@ export default async function DashboardPage() {
     .from("jobs")
     .select("*")
     .eq("user_id", user.id)
-    .not("status", "in", "(jobs_found,dismissed)")
-    .order("created_at", { ascending: false })
+    .not("status", "in", "(jobs_found,jobs_snoozed,jobs_deleted)")
+    .order("added_date", { ascending: false })
 
   return (
     <div className="space-y-8">

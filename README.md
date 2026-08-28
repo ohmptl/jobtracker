@@ -12,10 +12,9 @@ A personal job application tracker with a small MCP server for ChatGPT.
   - Rejections: Track rejected applications
 - **Search & Filter**: Search by company/position and filter by status
 - **Sorting**: Sort by date, company, or position
-- **Resume Upload**: Attach your resume to each application (PDF, DOC, DOCX)
 - **Statistics Page**: Track your application metrics and insights
 - **Browser Extension**: Quickly add jobs while browsing (Chrome)
-- **Jobs Found**: Keep ChatGPT-discovered roles separate until you approve them
+- **AI Jobs Found**: Review new roles in a feed, snooze them, or retain removed roles for deduplication
 - **MCP Server**: Let ChatGPT list, add, and update jobs directly
 - **AI Parsing**: Optional server-side Gemini parsing for the browser extension
 - **Responsive Sidebar**: Unified navigation across applications, research, statistics, and settings
@@ -26,7 +25,7 @@ A personal job application tracker with a small MCP server for ChatGPT.
 
 Run `scripts/000_master_setup.sql` in the Supabase SQL editor.
 
-The first successful run deletes old Job Tracker data and obsolete application tables, then creates the current schema. Your Supabase Auth user is preserved. A persistent migration marker makes later runs non-destructive: rerunning the same script only adds missing schema and refreshes indexes, policies, and triggers.
+The first successful schema-v2 run deletes old Job Tracker data and obsolete application tables, then creates the current schema. Your Supabase Auth user is preserved. A persistent migration marker makes later runs non-destructive: rerunning the same script only adds missing schema and refreshes indexes, policies, and triggers.
 
 ### 2. Environment Variables
 
@@ -81,10 +80,14 @@ The extension will auto-detect job information from common job boards and allow 
 Right-click or click the menu button on any job to:
 - Open the job posting URL
 - Edit job details
-- Upload/replace resume
-- View attached resume
 - Change application status
 - Delete the job
+
+### AI Jobs Found
+
+- **New**: Review one expanded job at a time, then move it to Apply, Snooze, or Remove it
+- **Snoozed**: Review postponed jobs in the same feed layout and return them to New when ready
+- **Deleted**: Retains removed jobs in a condensed list so ChatGPT can avoid suggesting them again
 
 ### Statistics
 
@@ -95,22 +98,11 @@ Click "Statistics" in the header to view:
 - Top companies you've applied to
 - Visual status breakdown
 
-### Resume Storage
-
-You can upload resumes for each application. Files are stored securely in Supabase Storage and are accessible only to you. This helps you quickly reference which version of your resume you used for each application, especially useful for interview preparation.
-
-**Storage Considerations:**
-- Supabase free tier includes 1GB of storage
-- Typical resume PDFs are 100-500KB
-- You can store approximately 2,000-10,000 resumes in the free tier
-- Consider deleting old resumes from rejected applications to save space
-
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
-- **Storage**: Supabase Storage
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui
 - **Deployment**: Vercel
@@ -155,9 +147,8 @@ Supported job sites with auto-detection:
 
 1. **Regular Updates**: Update job statuses as they change
 2. **Add Notes**: Include interview dates, contact names, and other relevant info
-3. **Upload Resumes**: Attach the resume you used for quick reference before interviews
-4. **Review Statistics**: Check your stats weekly to stay motivated and adjust your strategy
-5. **Use the Extension**: Add jobs as you find them to build your pipeline
+3. **Review Statistics**: Check your stats weekly to stay motivated and adjust your strategy
+4. **Use the Extension**: Add jobs as you find them to build your pipeline
 
 ## Support
 

@@ -9,15 +9,15 @@ export default async function ResearchPage() {
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("id,company,position,url,location,salary,notes")
+    .select("id,company,position,status,url,role_type,salary,posted_date,added_date,applied_date,notes")
     .eq("user_id", data.user.id)
-    .eq("status", "jobs_found")
-    .order("created_at", { ascending: false })
+    .in("status", ["jobs_found", "jobs_snoozed", "jobs_deleted"])
+    .order("added_date", { ascending: false })
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Jobs Found</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">AI Jobs Found</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Review roles ChatGPT found before moving them into your application pipeline.
         </p>

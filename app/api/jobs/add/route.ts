@@ -1,5 +1,16 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { z } from "zod"
+
+const jobSchema = z.object({
+  company: z.string().trim().max(200).optional(),
+  position: z.string().trim().max(300).optional(),
+  url: z.string().url().max(2000).nullable().optional(),
+  role_type: z.enum(["internship", "full_time"]).default("full_time"),
+  salary: z.string().trim().max(200).nullable().optional(),
+  posted_date: z.iso.date().nullable().optional(),
+  notes: z.string().trim().max(5000).nullable().optional(),
+})
 
 export async function POST(request: Request) {
   try {
@@ -15,8 +26,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders(request) })
     }
 
-    const body = await request.json()
-    const { company, position, url, location, salary, notes } = body
+    const parsed = jobSchema.safeParse(await request.json())
+    if (!parsed.success) return NextResponse.json({ error: "Invalid job data" }, { status: 400, headers: corsHeaders(request) })
+    const { company, position, url, role_type, salary, posted_date, notes } = parsed.data
 
     // Use default values if company or position are missing
     const finalCompany = company || "Unknown Company"
@@ -31,8 +43,9 @@ export async function POST(request: Request) {
         position: finalPosition,
         status: "to_apply",
         url: url || null,
-        location: location || null,
+        role_type,
         salary: salary || null,
+        posted_date: posted_date || null,
         notes: notes || null,
       })
       .select()

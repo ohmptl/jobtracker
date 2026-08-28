@@ -80,7 +80,8 @@ async function autofill() {
         extracted: {
           company: response.data.company,
           position: response.data.position,
-          location: response.data.location,
+          role_type: response.data.role_type,
+          posted_date: response.data.posted_date,
           salary: response.data.salary,
           description: response.data.description,
         },
@@ -103,7 +104,7 @@ async function autofill() {
 }
 
 function fillFields(data) {
-  const mapping = { company: "company", position: "position", location: "location", salary: "salary", summary: "notes" }
+  const mapping = { company: "company", position: "position", role_type: "role_type", posted_date: "posted_date", salary: "salary", summary: "notes" }
   for (const [field, elementId] of Object.entries(mapping)) {
     if (data?.[field]) document.getElementById(elementId).value = data[field]
   }
@@ -124,7 +125,8 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
     company: document.getElementById("company").value,
     position: document.getElementById("position").value,
     url: document.getElementById("url").value || null,
-    location: document.getElementById("location").value || null,
+    role_type: document.getElementById("role_type").value,
+    posted_date: document.getElementById("posted_date").value || null,
     salary: document.getElementById("salary").value || null,
     notes: document.getElementById("notes").value || null,
   }

@@ -1,370 +1,117 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ExternalLink, MoreHorizontal, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, ExternalLink, Search, Download } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-import { EditJobDialog } from "./edit-job-dialog"
+import { EditJobDialog, type EditableJob } from "./edit-job-dialog"
 
-type Job = {
-  id: string
-  company: string
-  position: string
-  status: string
-  url: string | null
-  location: string | null
-  salary: string | null
-  notes: string | null
-  applied_date: string | null
-  created_at: string
-  resume_url: string | null
-}
+type Job = EditableJob
 
 const STATUS_COLORS: Record<string, string> = {
-  to_apply: "bg-muted text-muted-foreground",
-  applied: "bg-blue-500/10 text-blue-500",
-  interviewing: "bg-purple-500/10 text-purple-500",
-  offered: "bg-green-500/10 text-green-500",
-  rejected: "bg-red-500/10 text-red-500",
-  accepted: "bg-emerald-500/10 text-emerald-500",
+  to_apply: "bg-muted text-muted-foreground", applied: "bg-blue-500/10 text-blue-500",
+  interviewing: "bg-purple-500/10 text-purple-500", offered: "bg-green-500/10 text-green-500",
+  rejected: "bg-red-500/10 text-red-500", accepted: "bg-emerald-500/10 text-emerald-500",
 }
-
 const STATUS_LABELS: Record<string, string> = {
-  to_apply: "To Apply",
-  applied: "Applied",
-  interviewing: "Interviewing",
-  offered: "Offered",
-  rejected: "Rejected",
-  accepted: "Accepted",
+  to_apply: "To Apply", applied: "Applied", interviewing: "Interviewing", offered: "Offered", rejected: "Rejected", accepted: "Accepted",
 }
+const APP_STATUSES = ["to_apply", "applied", "interviewing", "offered", "rejected", "accepted"]
+const formatDate = (value: string | null) => value ? new Date(value).toLocaleDateString() : "—"
 
 export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   const [editingJob, setEditingJob] = useState<Job | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState<"date" | "company" | "position">("date")
   const router = useRouter()
   const [supabase] = useState(() => createClient())
 
-  // Subscribe to realtime changes
   useEffect(() => {
-    const channel = supabase
-      .channel("realtime-jobs")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "jobs",
-        },
-        () => {
-          router.refresh()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    const channel = supabase.channel("realtime-jobs").on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, () => router.refresh()).subscribe()
+    return () => { void supabase.removeChannel(channel) }
   }, [supabase, router])
 
-  const deleteJob = async (id: string) => {
+  async function deleteJob(id: string) {
     const { error } = await supabase.from("jobs").delete().eq("id", id)
-    if (!error) {
-      router.refresh()
-    }
+    if (!error) router.refresh()
   }
 
-  const updateStatus = async (id: string, newStatus: string) => {
-    const updates: { status: string; applied_date?: string } = { status: newStatus }
-    if (newStatus === "applied" && !jobs.find((j) => j.id === id)?.applied_date) {
-      updates.applied_date = new Date().toISOString()
-    }
-
+  async function updateStatus(id: string, status: string) {
+    const current = jobs.find((job) => job.id === id)
+    const updates: { status: string; applied_date?: string } = { status }
+    if (status === "applied" && !current?.applied_date) updates.applied_date = new Date().toISOString()
     const { error } = await supabase.from("jobs").update(updates).eq("id", id)
-    if (!error) {
-      router.refresh()
-    }
+    if (!error) router.refresh()
   }
 
-  const downloadResume = (job: Job) => {
-    if (!job.resume_url) return
-
-    // Create a link element and trigger download
-    const link = document.createElement("a")
-    link.href = job.resume_url
-    link.download = `${job.company}-${job.position}-resume.pdf`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const filteredAndSortedJobs = useMemo(() => {
-    const filtered = jobs.filter((job) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.position.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchesStatus = statusFilter === "all" || job.status === statusFilter
-
-      return matchesSearch && matchesStatus
-    })
-
-    filtered.sort((a, b) => {
-      if (sortBy === "date") {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      } else if (sortBy === "company") {
-        return a.company.localeCompare(b.company)
-      } else {
-        return a.position.localeCompare(b.position)
-      }
-    })
-
-    return filtered
+  const filteredJobs = useMemo(() => {
+    const query = searchQuery.toLowerCase()
+    return jobs.filter((job) =>
+      (!query || job.company.toLowerCase().includes(query) || job.position.toLowerCase().includes(query)) &&
+      (statusFilter === "all" || job.status === statusFilter),
+    ).sort((a, b) => sortBy === "date"
+      ? new Date(b.added_date).getTime() - new Date(a.added_date).getTime()
+      : sortBy === "company" ? a.company.localeCompare(b.company) : a.position.localeCompare(b.position))
   }, [jobs, searchQuery, statusFilter, sortBy])
 
-  const groupedJobs = {
-    to_apply: filteredAndSortedJobs.filter((job) => job.status === "to_apply"),
-    applications: filteredAndSortedJobs.filter((job) => job.status !== "to_apply" && job.status !== "rejected"),
-    rejections: filteredAndSortedJobs.filter((job) => job.status === "rejected"),
-  }
+  const groups = [
+    { title: "To Apply", jobs: filteredJobs.filter((job) => job.status === "to_apply") },
+    { title: "Applications", jobs: filteredJobs.filter((job) => !["to_apply", "rejected"].includes(job.status)) },
+    { title: "Rejections", jobs: filteredJobs.filter((job) => job.status === "rejected") },
+  ]
 
-  const renderJobRow = (job: Job) => (
-    <TableRow key={job.id}>
-      <TableCell className="font-medium w-[150px]">
-        <div 
-          className="truncate max-w-[130px] cursor-pointer hover:underline" 
-          onClick={() => setEditingJob(job)} 
-          title={job.company}
-        >
-          {job.company}
-        </div>
-      </TableCell>
-      <TableCell className="w-[300px]">
-        <div 
-          className="truncate max-w-[280px] cursor-pointer hover:underline" 
-          onClick={() => setEditingJob(job)} 
-          title={job.position}
-        >
-          {job.position}
-        </div>
-      </TableCell>
-      <TableCell className="w-[150px]">
-        {job.url ? (
-          <a
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline truncate block max-w-[130px]"
-            title={job.url}
-          >
-            {job.url}
-          </a>
-        ) : (
-          "—"
-        )}
-      </TableCell>
-      <TableCell className="w-[100px]">
-        <Badge variant="secondary" className={STATUS_COLORS[job.status]}>
-          {STATUS_LABELS[job.status]}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-muted-foreground w-[100px]">
-        {job.applied_date ? new Date(job.applied_date).toLocaleDateString() : "—"}
-      </TableCell>
-      <TableCell className="w-[50px]">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            {job.url && (
-              <DropdownMenuItem asChild>
-                <a href={job.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Open URL
-                </a>
-              </DropdownMenuItem>
-            )}
-            {job.resume_url && (
-              <DropdownMenuItem onClick={() => downloadResume(job)} className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Download Resume
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={() => setEditingJob(job)}>Edit</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-            {job.status !== "applied" && (
-              <DropdownMenuItem onClick={() => updateStatus(job.id, "applied")}>Applied</DropdownMenuItem>
-            )}
-            {job.status !== "interviewing" && (
-              <DropdownMenuItem onClick={() => updateStatus(job.id, "interviewing")}>Interviewing</DropdownMenuItem>
-            )}
-            {job.status !== "offered" && (
-              <DropdownMenuItem onClick={() => updateStatus(job.id, "offered")}>Offered</DropdownMenuItem>
-            )}
-            {job.status !== "rejected" && (
-              <DropdownMenuItem onClick={() => updateStatus(job.id, "rejected")}>Rejected</DropdownMenuItem>
-            )}
-            {job.status !== "accepted" && (
-              <DropdownMenuItem onClick={() => updateStatus(job.id, "accepted")}>Accepted</DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => deleteJob(job.id)} className="text-destructive">
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
-  )
+  function renderRows(groupJobs: Job[]) {
+    return groupJobs.map((job) => (
+      <TableRow key={job.id}>
+        <TableCell className="font-medium"><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.company}</button></TableCell>
+        <TableCell><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.position}</button></TableCell>
+        <TableCell>{job.role_type === "internship" ? "Internship" : "Full time"}</TableCell>
+        <TableCell><Badge variant="secondary" className={STATUS_COLORS[job.status]}>{STATUS_LABELS[job.status]}</Badge></TableCell>
+        <TableCell>{job.salary || "—"}</TableCell>
+        <TableCell className="text-muted-foreground">{formatDate(job.posted_date)}</TableCell>
+        <TableCell className="text-muted-foreground">{formatDate(job.added_date)}</TableCell>
+        <TableCell className="text-muted-foreground">{formatDate(job.applied_date)}</TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              {job.url && <DropdownMenuItem asChild><a href={job.url} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 size-4" />View role</a></DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => setEditingJob(job)}>Edit</DropdownMenuItem>
+              <DropdownMenuSeparator /><DropdownMenuLabel>Change status</DropdownMenuLabel>
+              {APP_STATUSES.filter((status) => status !== job.status).map((status) => <DropdownMenuItem key={status} onClick={() => updateStatus(job.id, status)}>{STATUS_LABELS[status]}</DropdownMenuItem>)}
+              <DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => deleteJob(job.id)}>Delete permanently</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ))
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by company or position..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="to_apply">To Apply</SelectItem>
-            <SelectItem value="applied">Applied</SelectItem>
-            <SelectItem value="interviewing">Interviewing</SelectItem>
-            <SelectItem value="offered">Offered</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="accepted">Accepted</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={(v) => setSortBy(v as "date" | "company" | "position")}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date">Date (Newest)</SelectItem>
-            <SelectItem value="company">Company (A-Z)</SelectItem>
-            <SelectItem value="position">Position (A-Z)</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Search by company or position..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /></div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{APP_STATUSES.map((status) => <SelectItem key={status} value={status}>{STATUS_LABELS[status]}</SelectItem>)}</SelectContent></Select>
+        <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}><SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="date">Added (newest)</SelectItem><SelectItem value="company">Company (A–Z)</SelectItem><SelectItem value="position">Position (A–Z)</SelectItem></SelectContent></Select>
       </div>
 
-      {/* To Apply Section */}
-      {groupedJobs.to_apply.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            To Apply <span className="text-muted-foreground text-base">({groupedJobs.to_apply.length})</span>
-          </h2>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Company</TableHead>
-                  <TableHead className="w-[300px]">Position</TableHead>
-                  <TableHead className="w-[150px]">URL</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead className="w-[100px]">Applied</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>{groupedJobs.to_apply.map(renderJobRow)}</TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      {/* Applications Section */}
-      {groupedJobs.applications.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            Applications <span className="text-muted-foreground text-base">({groupedJobs.applications.length})</span>
-          </h2>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Company</TableHead>
-                  <TableHead className="w-[300px]">Position</TableHead>
-                  <TableHead className="w-[150px]">URL</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead className="w-[100px]">Applied</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>{groupedJobs.applications.map(renderJobRow)}</TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      {/* Rejections Section */}
-      {groupedJobs.rejections.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            Rejections <span className="text-muted-foreground text-base">({groupedJobs.rejections.length})</span>
-          </h2>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Company</TableHead>
-                  <TableHead className="w-[300px]">Position</TableHead>
-                  <TableHead className="w-[150px]">URL</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead className="w-[100px]">Applied</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>{groupedJobs.rejections.map(renderJobRow)}</TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      {filteredAndSortedJobs.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg">
-            {jobs.length === 0 ? "No jobs yet. Add your first application!" : "No jobs match your search criteria."}
-          </p>
-        </div>
-      )}
-
-      {editingJob && (
-        <EditJobDialog
-          job={editingJob}
-          onClose={() => setEditingJob(null)}
-          onUpdate={() => {
-            router.refresh()
-            setEditingJob(null)
-          }}
-        />
-      )}
+      {groups.map((group) => group.jobs.length > 0 && <section key={group.title}>
+        <h2 className="mb-4 text-xl font-semibold">{group.title} <span className="text-base text-muted-foreground">({group.jobs.length})</span></h2>
+        <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1050px]"><TableHeader><TableRow>
+          <TableHead>Company</TableHead><TableHead>Position</TableHead><TableHead>Role type</TableHead><TableHead>Status</TableHead>
+          <TableHead>Salary</TableHead><TableHead>Posted</TableHead><TableHead>Added</TableHead><TableHead>Applied</TableHead><TableHead className="w-12" />
+        </TableRow></TableHeader><TableBody>{renderRows(group.jobs)}</TableBody></Table></div>
+      </section>)}
+      {filteredJobs.length === 0 && <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">No jobs match this view.</div>}
+      {editingJob && <EditJobDialog job={editingJob} onClose={() => setEditingJob(null)} onUpdate={() => setEditingJob(null)} />}
     </div>
   )
 }

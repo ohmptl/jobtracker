@@ -8,7 +8,8 @@ const requestSchema = z.object({
   extracted: z.object({
     company: z.string().max(500).nullable(),
     position: z.string().max(500).nullable(),
-    location: z.string().max(500).nullable(),
+    role_type: z.enum(["internship", "full_time"]).nullable(),
+    posted_date: z.string().max(50).nullable(),
     salary: z.string().max(500).nullable(),
     description: z.string().max(12000).nullable(),
   }),
@@ -17,7 +18,8 @@ const requestSchema = z.object({
 const parsedJobSchema = z.object({
   company: z.string().nullable(),
   position: z.string().nullable(),
-  location: z.string().nullable(),
+  role_type: z.enum(["internship", "full_time"]).nullable(),
+  posted_date: z.iso.date().nullable(),
   salary: z.string().nullable(),
   summary: z.string().nullable(),
 })
@@ -59,11 +61,12 @@ export async function POST(request: Request) {
             properties: {
               company: { type: "STRING", nullable: true },
               position: { type: "STRING", nullable: true },
-              location: { type: "STRING", nullable: true },
+              role_type: { type: "STRING", enum: ["internship", "full_time"], nullable: true },
+              posted_date: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
               salary: { type: "STRING", nullable: true },
               summary: { type: "STRING", nullable: true },
             },
-            required: ["company", "position", "location", "salary", "summary"],
+            required: ["company", "position", "role_type", "posted_date", "salary", "summary"],
           },
         },
       }),

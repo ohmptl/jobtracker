@@ -57,8 +57,8 @@ export default async function McpConnectionPage() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-3 text-sm">
-            <li><code>list_jobs</code> — read Jobs Found, To Apply, Applied, Rejected, or all active jobs.</li>
-            <li><code>add_job_found</code> — add one discovered role to Jobs Found with URL deduplication.</li>
+            <li><code>list_jobs</code> — read New, Snoozed, Deleted, application lists, or every job.</li>
+            <li><code>add_job_found</code> — add one discovered role to AI Jobs Found with URL deduplication.</li>
             <li><code>update_job</code> — edit job details or move a job between lists.</li>
           </ul>
         </CardContent>
