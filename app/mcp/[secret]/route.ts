@@ -11,12 +11,12 @@ const jobStatus = z.enum(["jobs_found", "jobs_snoozed", "jobs_deleted", "to_appl
 const roleType = z.enum(["internship", "full_time"])
 const jobSchema = z.object({
   id: z.string(), company: z.string(), position: z.string(), status: jobStatus,
-  url: z.string().nullable(), role_type: roleType, salary: z.string().nullable(),
+  url: z.string().nullable(), location: z.string().nullable(), role_type: roleType, salary: z.string().nullable(),
   posted_date: z.string().nullable(), added_date: z.string(), applied_date: z.string().nullable(),
   notes: z.string().nullable(), updated_at: z.string().nullable(),
 })
 type Job = z.infer<typeof jobSchema>
-const JOB_FIELDS = "id,company,position,status,url,role_type,salary,posted_date,added_date,applied_date,notes,updated_at"
+const JOB_FIELDS = "id,company,position,status,url,location,role_type,salary,posted_date,added_date,applied_date,notes,updated_at"
 
 function getOwnerId() {
   const userId = process.env.MCP_USER_ID
@@ -53,6 +53,7 @@ function createJobTrackerServer() {
     inputSchema: {
       company: z.string().trim().min(1).max(200), position: z.string().trim().min(1).max(300),
       role_type: roleType, url: z.string().url().max(2000).nullable().optional(),
+      location: z.string().trim().max(300).nullable().optional(),
       salary: z.string().trim().max(200).nullable().optional(), posted_date: z.iso.date().nullable().optional(),
       notes: z.string().trim().max(5000).nullable().optional(),
     },
@@ -71,7 +72,7 @@ function createJobTrackerServer() {
     }
     const { data, error } = await admin.from("jobs").insert({
       user_id: userId, company: input.company, position: input.position, status: "jobs_found",
-      url: input.url || null, role_type: input.role_type, salary: input.salary || null,
+      url: input.url || null, location: input.location || null, role_type: input.role_type, salary: input.salary || null,
       posted_date: input.posted_date || null, notes: input.notes || null,
     }).select(JOB_FIELDS).single()
     if (error) throw new Error(error.message)
@@ -84,7 +85,7 @@ function createJobTrackerServer() {
     description: "Update job fields or move it between lists with status. Use jobs_found, jobs_snoozed, or jobs_deleted for AI review lists; to_apply moves it to Applications. Added Date cannot be changed.",
     inputSchema: {
       id: z.string().uuid(), company: z.string().trim().min(1).max(200).optional(), position: z.string().trim().min(1).max(300).optional(),
-      status: jobStatus.optional(), url: z.string().url().max(2000).nullable().optional(), role_type: roleType.optional(),
+      status: jobStatus.optional(), url: z.string().url().max(2000).nullable().optional(), location: z.string().trim().max(300).nullable().optional(), role_type: roleType.optional(),
       salary: z.string().trim().max(200).nullable().optional(), posted_date: z.iso.date().nullable().optional(),
       applied_date: z.string().datetime().nullable().optional(), notes: z.string().trim().max(5000).nullable().optional(),
     },

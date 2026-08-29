@@ -6,6 +6,7 @@ const jobSchema = z.object({
   company: z.string().trim().max(200).optional(),
   position: z.string().trim().max(300).optional(),
   url: z.string().url().max(2000).nullable().optional(),
+  location: z.string().trim().max(300).nullable().optional(),
   role_type: z.enum(["internship", "full_time"]).default("full_time"),
   salary: z.string().trim().max(200).nullable().optional(),
   posted_date: z.iso.date().nullable().optional(),
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
     const parsed = jobSchema.safeParse(await request.json())
     if (!parsed.success) return NextResponse.json({ error: "Invalid job data" }, { status: 400, headers: corsHeaders(request) })
-    const { company, position, url, role_type, salary, posted_date, notes } = parsed.data
+    const { company, position, url, location, role_type, salary, posted_date, notes } = parsed.data
 
     // Use default values if company or position are missing
     const finalCompany = company || "Unknown Company"
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
         position: finalPosition,
         status: "to_apply",
         url: url || null,
+        location: location || null,
         role_type,
         salary: salary || null,
         posted_date: posted_date || null,

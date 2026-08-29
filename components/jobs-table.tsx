@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ExternalLink, MoreHorizontal, Search } from "lucide-react"
+import { Check, ExternalLink, MoreHorizontal, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -30,6 +30,7 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState<"date" | "company" | "position">("date")
+  const [pendingId, setPendingId] = useState<string | null>(null)
   const router = useRouter()
   const [supabase] = useState(() => createClient())
 
@@ -44,11 +45,13 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   }
 
   async function updateStatus(id: string, status: string) {
+    setPendingId(id)
     const current = jobs.find((job) => job.id === id)
     const updates: { status: string; applied_date?: string } = { status }
     if (status === "applied" && !current?.applied_date) updates.applied_date = new Date().toISOString()
     const { error } = await supabase.from("jobs").update(updates).eq("id", id)
     if (!error) router.refresh()
+    setPendingId(null)
   }
 
   const filteredJobs = useMemo(() => {
@@ -67,23 +70,26 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
     { title: "Rejections", jobs: filteredJobs.filter((job) => job.status === "rejected") },
   ]
 
-  function renderRows(groupJobs: Job[]) {
+  function renderRows(groupJobs: Job[], isToApply: boolean) {
     return groupJobs.map((job) => (
       <TableRow key={job.id}>
         <TableCell className="font-medium"><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.company}</button></TableCell>
         <TableCell><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.position}</button></TableCell>
+        <TableCell>{job.location || "—"}</TableCell>
         <TableCell>{job.role_type === "internship" ? "Internship" : "Full time"}</TableCell>
         <TableCell><Badge variant="secondary" className={STATUS_COLORS[job.status]}>{STATUS_LABELS[job.status]}</Badge></TableCell>
         <TableCell>{job.salary || "—"}</TableCell>
         <TableCell className="text-muted-foreground">{formatDate(job.posted_date)}</TableCell>
-        <TableCell className="text-muted-foreground">{formatDate(job.added_date)}</TableCell>
-        <TableCell className="text-muted-foreground">{formatDate(job.applied_date)}</TableCell>
+        {!isToApply && <TableCell className="text-muted-foreground">{formatDate(job.applied_date)}</TableCell>}
+        <TableCell><div className="flex items-center gap-2">
+          {job.url ? <Button size="sm" variant="outline" asChild><a href={job.url} target="_blank" rel="noreferrer"><ExternalLink />View</a></Button> : <Button size="sm" variant="outline" disabled>View</Button>}
+          {isToApply && <Button size="sm" disabled={pendingId === job.id} onClick={() => updateStatus(job.id, "applied")}><Check />Applied</Button>}
+        </div></TableCell>
         <TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              {job.url && <DropdownMenuItem asChild><a href={job.url} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 size-4" />View role</a></DropdownMenuItem>}
               <DropdownMenuItem onClick={() => setEditingJob(job)}>Edit</DropdownMenuItem>
               <DropdownMenuSeparator /><DropdownMenuLabel>Change status</DropdownMenuLabel>
               {APP_STATUSES.filter((status) => status !== job.status).map((status) => <DropdownMenuItem key={status} onClick={() => updateStatus(job.id, status)}>{STATUS_LABELS[status]}</DropdownMenuItem>)}
@@ -105,10 +111,10 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
 
       {groups.map((group) => group.jobs.length > 0 && <section key={group.title}>
         <h2 className="mb-4 text-xl font-semibold">{group.title} <span className="text-base text-muted-foreground">({group.jobs.length})</span></h2>
-        <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1050px]"><TableHeader><TableRow>
-          <TableHead>Company</TableHead><TableHead>Position</TableHead><TableHead>Role type</TableHead><TableHead>Status</TableHead>
-          <TableHead>Salary</TableHead><TableHead>Posted</TableHead><TableHead>Added</TableHead><TableHead>Applied</TableHead><TableHead className="w-12" />
-        </TableRow></TableHeader><TableBody>{renderRows(group.jobs)}</TableBody></Table></div>
+        <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1120px]"><TableHeader><TableRow>
+          <TableHead>Company</TableHead><TableHead>Position</TableHead><TableHead>Location</TableHead><TableHead>Role type</TableHead><TableHead>Status</TableHead>
+          <TableHead>Salary</TableHead><TableHead>Posted</TableHead>{group.title !== "To Apply" && <TableHead>Applied</TableHead>}<TableHead>Job posting</TableHead><TableHead className="w-12" />
+        </TableRow></TableHeader><TableBody>{renderRows(group.jobs, group.title === "To Apply")}</TableBody></Table></div>
       </section>)}
       {filteredJobs.length === 0 && <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">No jobs match this view.</div>}
       {editingJob && <EditJobDialog job={editingJob} onClose={() => setEditingJob(null)} onUpdate={() => setEditingJob(null)} />}

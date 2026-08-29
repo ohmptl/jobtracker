@@ -9,7 +9,7 @@ export default async function ResearchPage() {
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("id,company,position,status,url,role_type,salary,posted_date,added_date,applied_date,notes")
+    .select("id,company,position,status,url,location,role_type,salary,posted_date,added_date,applied_date,notes")
     .eq("user_id", data.user.id)
     .in("status", ["jobs_found", "jobs_snoozed", "jobs_deleted"])
     .order("added_date", { ascending: false })

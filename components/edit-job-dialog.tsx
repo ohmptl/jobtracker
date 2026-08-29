@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 
 export type EditableJob = {
-  id: string; company: string; position: string; status: string; url: string | null
+  id: string; company: string; position: string; status: string; url: string | null; location: string | null
   role_type: "internship" | "full_time"; salary: string | null; posted_date: string | null
   added_date: string; applied_date: string | null; notes: string | null
 }
@@ -37,6 +37,7 @@ export function EditJobDialog({ job, onClose, onUpdate }: { job: EditableJob; on
       position: formData.get("position") as string,
       status,
       url: (formData.get("url") as string) || null,
+      location: (formData.get("location") as string) || null,
       role_type: formData.get("role_type") as string,
       salary: (formData.get("salary") as string) || null,
       posted_date: (formData.get("posted_date") as string) || null,
@@ -71,7 +72,10 @@ export function EditJobDialog({ job, onClose, onUpdate }: { job: EditableJob; on
               </SelectContent></Select>
             </div>
           </div>
-          <div className="space-y-2"><Label htmlFor="url">Job URL</Label><Input id="url" name="url" type="url" defaultValue={job.url || ""} /></div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="url">Job URL</Label><Input id="url" name="url" type="url" defaultValue={job.url || ""} /></div>
+            <div className="space-y-2"><Label htmlFor="location">Location</Label><Input id="location" name="location" defaultValue={job.location || ""} /></div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="salary">Salary</Label><Input id="salary" name="salary" defaultValue={job.salary || ""} /></div>
             <div className="space-y-2"><Label htmlFor="posted_date">Posted Date</Label><Input id="posted_date" name="posted_date" type="date" defaultValue={dateValue(job.posted_date)} /></div>

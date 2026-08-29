@@ -37,6 +37,7 @@ export function AddJobDialog() {
       position: formData.get("position") as string,
       status,
       url: (formData.get("url") as string) || null,
+      location: (formData.get("location") as string) || null,
       role_type: formData.get("role_type") as string,
       salary: (formData.get("salary") as string) || null,
       posted_date: (formData.get("posted_date") as string) || null,
@@ -85,7 +86,10 @@ export function AddJobDialog() {
               </Select>
             </div>
           </div>
-          <div className="space-y-2"><Label htmlFor="url">Job URL</Label><Input id="url" name="url" type="url" placeholder="https://..." /></div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="url">Job URL</Label><Input id="url" name="url" type="url" placeholder="https://..." /></div>
+            <div className="space-y-2"><Label htmlFor="location">Location</Label><Input id="location" name="location" placeholder="e.g., New York, NY or Remote" /></div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="salary">Salary</Label><Input id="salary" name="salary" placeholder="e.g., $80k–$100k" /></div>
             <div className="space-y-2"><Label htmlFor="posted_date">Posted Date</Label><Input id="posted_date" name="posted_date" type="date" /></div>

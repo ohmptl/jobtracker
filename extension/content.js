@@ -12,6 +12,7 @@ function extractJobInformation() {
   const info = {
     company: null,
     position: null,
+    location: null,
     role_type: null,
     posted_date: null,
     salary: null,
@@ -28,6 +29,7 @@ function extractJobInformation() {
       if (!posting) continue
       info.company ||= posting.hiringOrganization?.name || null
       info.position ||= posting.title || null
+      info.location ||= posting.jobLocation?.address?.addressLocality || posting.jobLocationType || null
       const employmentType = Array.isArray(posting.employmentType) ? posting.employmentType.join(" ") : posting.employmentType
       if (/intern/i.test(employmentType || "")) info.role_type = "internship"
       else if (employmentType) info.role_type = "full_time"
@@ -94,6 +96,19 @@ function extractJobInformation() {
     }
     if (!info.position) {
       info.position = title // Last resort
+    }
+  }
+
+  // Try to extract location when structured data did not provide it.
+  if (!info.location) {
+    const locationSelectors = ['[class*="location" i]', "[data-location]", ".job-location"]
+    for (const selector of locationSelectors) {
+      const element = document.querySelector(selector)
+      const text = element?.textContent?.trim()
+      if (text && text.length < 100) {
+        info.location = text
+        break
+      }
     }
   }
 

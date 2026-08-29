@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS public.jobs (
   position TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'to_apply',
   url TEXT,
+  location TEXT,
   role_type TEXT NOT NULL DEFAULT 'full_time',
   salary TEXT,
   posted_date DATE,
@@ -73,6 +74,7 @@ ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS company TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS position TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'to_apply';
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS url TEXT;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS location TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS role_type TEXT DEFAULT 'full_time';
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS salary TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS posted_date DATE;
