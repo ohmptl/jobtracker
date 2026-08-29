@@ -113,13 +113,28 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
         <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}><SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="date">Added (newest)</SelectItem><SelectItem value="company">Company (A–Z)</SelectItem><SelectItem value="position">Position (A–Z)</SelectItem></SelectContent></Select>
       </div>
 
-      {groups.map((group) => group.jobs.length > 0 && <section key={group.title}>
-        <h2 className="mb-4 text-xl font-semibold">{group.title} <span className="text-base text-muted-foreground">({group.jobs.length})</span></h2>
-        <div className="overflow-hidden rounded-lg border"><Table className="w-full table-fixed"><TableHeader><TableRow>
-          <TableHead className="w-[14%]">Company</TableHead><TableHead className="w-[16%]">Position</TableHead><TableHead className="w-[11%]">Location</TableHead><TableHead className="w-[8%]">Role type</TableHead><TableHead className="w-[9%]">Status</TableHead>
-          <TableHead className="w-[10%]">Salary</TableHead><TableHead className="w-[8%]">Posted</TableHead>{group.title !== "To Apply" && <TableHead className="w-[8%]">Applied</TableHead>}<TableHead className="w-[120px]">Job posting</TableHead><TableHead className="w-10" />
-        </TableRow></TableHeader><TableBody>{renderRows(group.jobs, group.title === "To Apply")}</TableBody></Table></div>
-      </section>)}
+      {groups.map((group) => {
+        if (group.jobs.length === 0) return null
+        const isToApply = group.title === "To Apply"
+        return <section key={group.title}>
+          <h2 className="mb-4 text-xl font-semibold">{group.title} <span className="text-base text-muted-foreground">({group.jobs.length})</span></h2>
+          <div className="overflow-hidden rounded-lg border"><Table className="w-full table-fixed"><colgroup>
+            <col className="w-[14%]" />
+            <col />
+            <col className="w-[11%]" />
+            <col className="w-[8%]" />
+            <col className="w-[9%]" />
+            <col className="w-[10%]" />
+            <col className="w-[8%]" />
+            {!isToApply && <col className="w-[8%]" />}
+            <col className="w-[190px]" />
+            <col className="w-14" />
+          </colgroup><TableHeader><TableRow>
+            <TableHead>Company</TableHead><TableHead>Position</TableHead><TableHead>Location</TableHead><TableHead>Role type</TableHead><TableHead>Status</TableHead>
+            <TableHead>Salary</TableHead><TableHead>Posted</TableHead>{!isToApply && <TableHead>Applied</TableHead>}<TableHead>Job posting</TableHead><TableHead />
+          </TableRow></TableHeader><TableBody>{renderRows(group.jobs, isToApply)}</TableBody></Table></div>
+        </section>
+      })}
       {filteredJobs.length === 0 && <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">No jobs match this view.</div>}
       {editingJob && <EditJobDialog job={editingJob} onClose={() => setEditingJob(null)} onUpdate={() => setEditingJob(null)} />}
     </div>
