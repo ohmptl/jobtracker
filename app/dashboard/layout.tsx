@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-svh bg-muted/20">
       <DashboardSidebar email={data.user.email} />
       <main className="min-h-svh pt-16 md:pl-64 md:pt-0">
-        <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   )

@@ -25,6 +25,10 @@ const STATUS_LABELS: Record<string, string> = {
 const APP_STATUSES = ["to_apply", "applied", "interviewing", "offered", "rejected", "accepted"]
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleDateString() : "—"
 
+function TruncatedText({ children, className = "" }: { children: string; className?: string }) {
+  return <span title={children} className={`block truncate ${className}`}>{children}</span>
+}
+
 export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   const [editingJob, setEditingJob] = useState<Job | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -73,16 +77,16 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   function renderRows(groupJobs: Job[], isToApply: boolean) {
     return groupJobs.map((job) => (
       <TableRow key={job.id}>
-        <TableCell className="font-medium"><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.company}</button></TableCell>
-        <TableCell><button className="text-left hover:underline" onClick={() => setEditingJob(job)}>{job.position}</button></TableCell>
-        <TableCell>{job.location || "—"}</TableCell>
+        <TableCell className="font-medium"><button title={job.company} className="block w-full truncate text-left hover:underline" onClick={() => setEditingJob(job)}>{job.company}</button></TableCell>
+        <TableCell><button title={job.position} className="block w-full truncate text-left hover:underline" onClick={() => setEditingJob(job)}>{job.position}</button></TableCell>
+        <TableCell><TruncatedText>{job.location || "—"}</TruncatedText></TableCell>
         <TableCell>{job.role_type === "internship" ? "Internship" : "Full time"}</TableCell>
         <TableCell><Badge variant="secondary" className={STATUS_COLORS[job.status]}>{STATUS_LABELS[job.status]}</Badge></TableCell>
-        <TableCell>{job.salary || "—"}</TableCell>
+        <TableCell><TruncatedText>{job.salary || "—"}</TruncatedText></TableCell>
         <TableCell className="text-muted-foreground">{formatDate(job.posted_date)}</TableCell>
         {!isToApply && <TableCell className="text-muted-foreground">{formatDate(job.applied_date)}</TableCell>}
-        <TableCell><div className="flex items-center gap-2">
-          {job.url ? <Button size="sm" variant="outline" asChild><a href={job.url} target="_blank" rel="noreferrer"><ExternalLink />View</a></Button> : <Button size="sm" variant="outline" disabled>View</Button>}
+        <TableCell><div className="flex items-center gap-1.5">
+          {job.url ? <Button size="sm" variant="outline" asChild><a href={job.url} target="_blank" rel="noreferrer" aria-label={`View ${job.position} at ${job.company}`}><ExternalLink /></a></Button> : <Button size="sm" variant="outline" disabled aria-label="No job posting URL"><ExternalLink /></Button>}
           {isToApply && <Button size="sm" disabled={pendingId === job.id} onClick={() => updateStatus(job.id, "applied")}><Check />Applied</Button>}
         </div></TableCell>
         <TableCell>
@@ -111,9 +115,9 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
 
       {groups.map((group) => group.jobs.length > 0 && <section key={group.title}>
         <h2 className="mb-4 text-xl font-semibold">{group.title} <span className="text-base text-muted-foreground">({group.jobs.length})</span></h2>
-        <div className="overflow-x-auto rounded-lg border"><Table className="min-w-[1120px]"><TableHeader><TableRow>
-          <TableHead>Company</TableHead><TableHead>Position</TableHead><TableHead>Location</TableHead><TableHead>Role type</TableHead><TableHead>Status</TableHead>
-          <TableHead>Salary</TableHead><TableHead>Posted</TableHead>{group.title !== "To Apply" && <TableHead>Applied</TableHead>}<TableHead>Job posting</TableHead><TableHead className="w-12" />
+        <div className="overflow-hidden rounded-lg border"><Table className="w-full table-fixed"><TableHeader><TableRow>
+          <TableHead className="w-[14%]">Company</TableHead><TableHead className="w-[16%]">Position</TableHead><TableHead className="w-[11%]">Location</TableHead><TableHead className="w-[8%]">Role type</TableHead><TableHead className="w-[9%]">Status</TableHead>
+          <TableHead className="w-[10%]">Salary</TableHead><TableHead className="w-[8%]">Posted</TableHead>{group.title !== "To Apply" && <TableHead className="w-[8%]">Applied</TableHead>}<TableHead className="w-[120px]">Job posting</TableHead><TableHead className="w-10" />
         </TableRow></TableHeader><TableBody>{renderRows(group.jobs, group.title === "To Apply")}</TableBody></Table></div>
       </section>)}
       {filteredJobs.length === 0 && <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">No jobs match this view.</div>}
