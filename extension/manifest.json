@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Tracker Extension",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Parse job postings with AI and add them to your job tracker",
   "permissions": ["activeTab", "storage", "cookies"],
   "host_permissions": ["http://localhost:3000/*", "https://*/*"],

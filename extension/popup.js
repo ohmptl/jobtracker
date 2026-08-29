@@ -5,41 +5,44 @@ const DEFAULT_API_URL = "http://localhost:3000"
 
 let apiUrl = DEFAULT_API_URL
 
-// Load API URL from storage
+// Load the saved URL before checking authentication. This avoids an initial
+// request to localhost when Chrome storage has not finished loading yet.
 chrome.storage.sync.get([API_URL_KEY], (result) => {
   apiUrl = result[API_URL_KEY] || DEFAULT_API_URL
+  checkAuth()
 })
 
 // Check authentication status
 async function checkAuth() {
-  const authLoading = document.getElementById("authLoading")
   const loginPrompt = document.getElementById("loginPrompt")
   const jobForm = document.getElementById("jobForm")
-  try {
-    const response = await fetch(`${apiUrl}/api/auth/session`, {
-      credentials: "include",
-    })
-    const data = await response.json()
+  let lastError = null
 
-    if (data.authenticated) {
-      authLoading.style.display = "none"
-      loginPrompt.style.display = "none"
-      jobForm.style.display = "block"
-      autofill()
-      return true
-    } else {
-      authLoading.style.display = "none"
-      loginPrompt.style.display = "block"
-      jobForm.style.display = "none"
-      return false
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(`${apiUrl}/api/auth/session`, { credentials: "include" })
+      if (!response.ok) throw new Error(`Server returned ${response.status}`)
+      const data = await response.json()
+      if (data.authenticated) {
+        loginPrompt.style.display = "none"
+        jobForm.style.display = "block"
+        autofill()
+        return true
+      }
+      lastError = new Error("Not signed in")
+    } catch (error) {
+      lastError = error
     }
-  } catch {
-    authLoading.style.display = "none"
-    loginPrompt.style.display = "block"
-    jobForm.style.display = "none"
-    showStatus("error", "Could not connect to your Job Tracker. Check the Site URL.")
-    return false
+    if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 350))
   }
+
+  loginPrompt.style.display = "block"
+  jobForm.style.display = "none"
+  const message = lastError?.message === "Not signed in"
+    ? "Sign in to your Job Tracker, then reopen this popup."
+    : "Could not connect after three attempts. Check the Site URL."
+  showStatus("error", message)
+  return false
 }
 
 // Show status message
@@ -196,15 +199,11 @@ document.getElementById("settingsLink").addEventListener("click", (e) => {
   const newUrl = prompt("Enter your Job Tracker URL:", apiUrl)
   if (newUrl) {
     apiUrl = newUrl
-    chrome.storage.sync.set({ [API_URL_KEY]: newUrl }, () => {
+chrome.storage.sync.set({ [API_URL_KEY]: newUrl }, () => {
       showStatus("success", "API URL updated!")
-      document.getElementById("authLoading").style.display = "block"
       document.getElementById("loginPrompt").style.display = "none"
-      document.getElementById("jobForm").style.display = "none"
+      document.getElementById("jobForm").style.display = "block"
       checkAuth()
     })
   }
 })
-
-// Initialize
-checkAuth()
