@@ -12,6 +12,9 @@ chrome.storage.sync.get([API_URL_KEY], (result) => {
 
 // Check authentication status
 async function checkAuth() {
+  const authLoading = document.getElementById("authLoading")
+  const loginPrompt = document.getElementById("loginPrompt")
+  const jobForm = document.getElementById("jobForm")
   try {
     const response = await fetch(`${apiUrl}/api/auth/session`, {
       credentials: "include",
@@ -19,17 +22,22 @@ async function checkAuth() {
     const data = await response.json()
 
     if (data.authenticated) {
-      document.getElementById("loginPrompt").style.display = "none"
-      document.getElementById("jobForm").style.display = "block"
+      authLoading.style.display = "none"
+      loginPrompt.style.display = "none"
+      jobForm.style.display = "block"
       autofill()
       return true
     } else {
-      // Don't block UI on initial load, just return false
-      // We'll prompt for login when they try to add a job
+      authLoading.style.display = "none"
+      loginPrompt.style.display = "block"
+      jobForm.style.display = "none"
       return false
     }
   } catch {
-    // Don't block UI on error
+    authLoading.style.display = "none"
+    loginPrompt.style.display = "block"
+    jobForm.style.display = "none"
+    showStatus("error", "Could not connect to your Job Tracker. Check the Site URL.")
     return false
   }
 }
@@ -52,7 +60,7 @@ async function autofill() {
   const autofillBtn = document.getElementById("autofillBtn")
   try {
     autofillBtn.disabled = true
-    autofillBtn.textContent = "Analyzing..."
+    autofillBtn.textContent = "Analyzing page…"
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
     document.getElementById("url").value = tab.url
@@ -107,14 +115,18 @@ async function autofill() {
     showStatus("error", "Could not auto-fill from this page")
   } finally {
     autofillBtn.disabled = false
-    autofillBtn.textContent = "AI auto-fill"
+    autofillBtn.textContent = "Analyze page"
   }
 }
 
 function fillFields(data) {
   const mapping = { company: "company", position: "position", location: "location", role_type: "role_type", posted_date: "posted_date", salary: "salary", summary: "notes" }
   for (const [field, elementId] of Object.entries(mapping)) {
-    if (data?.[field]) document.getElementById(elementId).value = data[field]
+    if (data?.[field]) {
+      const element = document.getElementById(elementId)
+      element.value = data[field]
+      element.classList.add("is-filled")
+    }
   }
 }
 
@@ -155,6 +167,7 @@ document.getElementById("addJobForm").addEventListener("submit", async (e) => {
     if (response.ok) {
       showStatus("success", "Job added to tracker!")
       document.getElementById("addJobForm").reset()
+      document.querySelectorAll(".is-filled").forEach((element) => element.classList.remove("is-filled"))
     } else {
       if (response.status === 401) {
         showStatus("error", "Please log in to your job tracker")
@@ -185,12 +198,13 @@ document.getElementById("settingsLink").addEventListener("click", (e) => {
     apiUrl = newUrl
     chrome.storage.sync.set({ [API_URL_KEY]: newUrl }, () => {
       showStatus("success", "API URL updated!")
+      document.getElementById("authLoading").style.display = "block"
+      document.getElementById("loginPrompt").style.display = "none"
+      document.getElementById("jobForm").style.display = "none"
       checkAuth()
     })
   }
 })
 
 // Initialize
-document.getElementById("loginPrompt").style.display = "none"
-document.getElementById("jobForm").style.display = "block"
 checkAuth()

@@ -37,7 +37,7 @@ The following environment variables need to be configured in your project:
 - `MCP_USER_ID` (your Supabase Auth user UUID)
 - `MCP_SECRET` (a random secret of at least 32 characters)
 - `GEMINI_API_KEY` (server-only, optional, enables extension AI parsing)
-- `GEMINI_MODEL` (optional, defaults to `gemini-2.5-flash`)
+- `GEMINI_MODEL` (optional, defaults to `gemini-3.6-flash`)
 
 Copy `.env.example` to `.env.local` and fill in the values. Never expose the service-role or Gemini keys through `NEXT_PUBLIC_` variables.
 
