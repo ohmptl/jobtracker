@@ -94,7 +94,14 @@ async function autofill() {
       fillFields(result.data)
       showStatus("success", "Job details parsed with AI")
     } else {
-      showStatus("info", "Used local parsing. Configure Gemini on the server for AI parsing.")
+      const result = await aiResponse.json().catch(() => ({}))
+      let message = result.error || `AI parsing failed (${aiResponse.status})`
+      if (aiResponse.status === 401) {
+        message = `Sign in at ${apiUrl} in Chrome, then try AI auto-fill again.`
+      } else if (aiResponse.status === 503) {
+        message = "GEMINI_API_KEY is unavailable on the deployed server. Check the Vercel environment and redeploy."
+      }
+      showStatus("error", message)
     }
   } catch {
     showStatus("error", "Could not auto-fill from this page")
