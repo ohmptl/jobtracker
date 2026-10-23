@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- JSON RPC fixture assertions use heterogeneous result objects. */
-import { test, before, after } from "node:test";
+import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
@@ -77,6 +77,14 @@ before(async () => {
   );
   await db.exec(readFileSync("supabase/migrations/202610230007_search_all_job_fields.sql", "utf8"));
   await identity();
+  await db.exec(`insert into public.jobs(user_id,company,position,status,protected,notes)
+    values('${owner}','Legacy Manual Flag','SYNTHETIC legacy flag fixture','jobs_found',true,'Preserve this inert legacy flag');`);
+  await db.exec(readFileSync("supabase/migrations/202610230008_simplify_lifecycle.sql", "utf8"));
+  await identity();
+});
+beforeEach(async () => {
+  await identity();
+  await db.exec("truncate private.request_budgets");
 });
 after(async () => db.close());
 
@@ -112,14 +120,13 @@ test("server filters compose and alphabetical cursors preserve order", async () 
     posted_date: "2026-10-01",
   });
   await add("Sort A", "ASIC Engineer");
-  await api("update_job", { id: b.id, priority: "strategic", protected: true });
+  await api("update_job", { id: b.id, priority: "strategic" });
   const filtered = await api("list_jobs", {
     company: "Sort",
     title: "FPGA",
     role_type: "new_grad",
     location: "Remote",
     priority: "strategic",
-    protected: true,
     source: "employer",
     posted_after: "2026-09-01",
     availability: "not_checked",
@@ -349,7 +356,7 @@ test("duplicate URL/requisition checks include Deleted and preserve distinct req
     ["duplicate", "rejected", "added"],
   );
 });
-test("client permissions, owner isolation, protected employers, application history and revocation", async () => {
+test("client permissions, owner isolation, employer-neutral edits, application history and revocation", async () => {
   const j = await add("Guard Labs");
   const protectedJob = await add("NVIDIA");
   await api("grant_client", {
@@ -358,25 +365,17 @@ test("client permissions, owner isolation, protected employers, application hist
     permissions: ["read", "write", "remove", "restore", "history"],
   });
   await identity(owner, "client-a");
-  await assert.rejects(
-    api("update_job", { id: protectedJob.id, company: "Unprotected Company" }),
-    /Permission denied: protect/,
-  );
-  await assert.rejects(
-    api("remove_job", { id: protectedJob.id, reason: "Internship" }),
-    /Protected open/,
-  );
-  await assert.rejects(
-    api("update_job", { id: j.id, protected: true }),
-    /Permission denied: protect/,
-  );
+  await api("update_job", { id: protectedJob.id, company: "Renamed employer", priority: "strategic" });
+  await api("remove_job", { id: protectedJob.id, reason: "Owner instructed direct removal" });
+  assert.equal((await api("get_job", { id: protectedJob.id })).job.status, "jobs_deleted");
+  await assert.rejects(api("update_job", { id: j.id, protected: true }), /retired/);
   await assert.rejects(
     api("update_job", { id: j.id, status: "applied" }),
-    /human owner/,
+    /human owner|owner-managed/,
   );
   await assert.rejects(
     api("save_policy", { ai_deletion: false }),
-    /Human owner/,
+    /Unknown operation/,
   );
   await api("remove_job", {
     id: j.id,
@@ -403,6 +402,8 @@ test("bulk removal reports partial failures and preserves active applications", 
   const j = await add("Bulk Labs");
   const app = await add("Application Labs");
   await api("update_job", { id: app.id, status: "applied" });
+  await api("grant_client", { client_id: "bulk-lifecycle", label: "Bulk client", permissions: ["read", "write", "remove"] });
+  await identity(owner, "bulk-lifecycle");
   const result = await api("bulk_remove_jobs", {
     ids: [j.id, app.id],
     reason: "batch cleanup",
@@ -413,37 +414,117 @@ test("bulk removal reports partial failures and preserves active applications", 
   );
   assert.equal((await api("get_job", { id: app.id })).job.status, "applied");
 });
-test("cleanup preview rejects changed data and policy; execution is retry safe", async () => {
-  const j = await add("Low Value Labs", "Generic Internship", {
-    role_type: "internship",
-  });
-  await api("update_job", {
-    id: j.id,
-    priority: "low",
-    evaluation_reason:
-      "Routine work with no specialized hardware or career differentiation.",
-  });
-  const preview = await api("preview_cleanup");
-  assert(preview.candidates.some((c: any) => c.id === j.id));
-  await api("update_job", { id: j.id, notes: "Updated after preview" });
-  await assert.rejects(
-    api("execute_cleanup", { preview_id: preview.preview_id }),
-    /data changed/,
-  );
-  const p2 = await api("preview_cleanup");
-  await api("save_policy", { tombstone_days: 120 });
-  await assert.rejects(
-    api("execute_cleanup", { preview_id: p2.preview_id }),
-    /policy changed/,
-  );
-  const p3 = await api("preview_cleanup");
-  const result = await api("execute_cleanup", { preview_id: p3.preview_id });
-  assert(result.removed >= 1);
-  assert.deepEqual(
-    await api("execute_cleanup", { preview_id: p3.preview_id }),
-    result,
-  );
+test("retired cleanup engine cannot recommend or remove jobs; maintenance only purges Deleted", async () => {
+  const low = await add("Apple", "Generic Internship", { role_type: "internship" });
+  const closed = await add("SpaceX", "Closed posting");
+  await api("update_job", { id: low.id, priority: "low", evaluation_reason: "Agent-selected priority, without backend career rules." });
+  await api("submit_verification", { id: closed.id, availability: "closed", source: "https://example.com/closed", method: "employer_explicit", confidence: "high", evidence: "Employer explicitly states this position has been filled." });
+  for (const operation of ["preview_cleanup", "execute_cleanup", "save_policy", "save_company", "delete_company"])
+    await assert.rejects(api(operation), /Unknown operation/);
+  const settings = await api("get_settings");
+  assert(!("policy" in settings)); assert(!("companies" in settings));
+  const run = await db.query<{ r: any }>("select public.tracker_maintenance() r");
+  assert.equal(run.rows[0].r.expired_removed, 0);
+  assert.equal((await api("get_job", { id: low.id })).job.status, "jobs_found");
+  assert.equal((await api("get_job", { id: closed.id })).job.status, "jobs_found");
+  const removed = await db.query<{ previews: string | null; policies: string | null }>("select to_regclass('public.cleanup_previews')::text previews, to_regclass('public.cleanup_policies')::text policies");
+  assert.equal(removed.rows[0].previews, null); assert.equal(removed.rows[0].policies, null);
 });
+
+test("AI bulk removal ignores employer and priority and restores exact review stages", async () => {
+  const jobs = [(await api("list_jobs", { company: "Legacy Manual Flag" })).jobs[0]];
+  assert.equal((await db.query<{ protected: boolean }>("select protected from public.jobs where id=$1", [jobs[0].id])).rows[0].protected, true);
+  for (const [i, company] of ["Apple", "NVIDIA", "SpaceX", "Intel", "Ordinary Company"].entries()) {
+    const job = await add(company, `Lifecycle fixture ${i}`, { role_type: i % 2 ? "internship" : "full_time" });
+    await api("update_job", { id: job.id, priority: i % 2 ? "low" : "strategic", status: i % 2 ? "jobs_snoozed" : "jobs_found" });
+    jobs.push(job);
+  }
+  await api("grant_client", { client_id: "free-lifecycle", label: "Owner-selected label", permissions: ["read", "write", "remove", "restore", "history"] });
+  await identity(owner, "free-lifecycle");
+  const bulk = await api("bulk_remove_jobs", { ids: jobs.map(j => j.id), reason: "Agent selected these exact records" });
+  assert(bulk.results.every((r: any) => r.outcome === "ok"));
+  for (const job of jobs) {
+    const deleted = (await api("get_job", { id: job.id })).job;
+    assert.equal(deleted.status, "jobs_deleted");
+    assert.equal(Date.parse(deleted.purge_after) - Date.parse(deleted.deleted_at), 30 * 86400000);
+    assert(!("protected" in deleted)); assert(!("company_protected" in deleted));
+    await api("restore_job", { id: job.id });
+    assert.equal((await api("get_job", { id: job.id })).job.status, deleted.previous_status);
+  }
+});
+
+test("all application stages reject ordinary AI cleanup and generic/direct status bypasses", async () => {
+  const jobs = [];
+  for (const status of ["to_apply", "applied", "interviewing", "offered", "accepted", "rejected"]) {
+    const job = await add("Application lifecycle", status, { notes: `Preserve ${status} notes` });
+    await api("update_job", { id: job.id, status });
+    jobs.push({ ...job, status });
+  }
+  await api("grant_client", { client_id: "application-lifecycle", label: "Application client", permissions: ["read", "write", "remove", "restore", "history"] });
+  await identity(owner, "application-lifecycle");
+  for (const job of jobs) {
+    await api("update_job", { id: job.id, priority: "low" });
+    await assert.rejects(api("remove_job", { id: job.id, reason: "Ordinary evaluation" }), /Application-stage/);
+    for (const status of ["jobs_deleted", "dismissed"])
+      await assert.rejects(api("update_job", { id: job.id, status, reason: "Generic bypass" }), /Application-stage/);
+    await assert.rejects(api("update_job", { id: job.id, status: "jobs_found" }), /human owner/);
+    const current = (await api("get_job", { id: job.id })).job;
+    assert.equal(current.status, job.status); assert.equal(current.notes, job.notes);
+  }
+  const batch = await api("bulk_remove_jobs", { ids: jobs.map(j => j.id), reason: "Ordinary batch" });
+  assert(batch.results.every((r: any) => r.outcome === "rejected" && r.reason.includes("Application-stage")));
+  await db.exec("set role authenticated");
+  try {
+    await assert.rejects(db.query("update public.jobs set status='jobs_deleted',removal_reason='Direct bypass' where id=$1", [jobs[0].id]), /Application-stage/);
+  } finally { await db.exec("reset role"); }
+  for (const job of jobs) {
+    await api("submit_verification", { id: job.id, availability: "closed", method: "ats_explicit", confidence: "high", source: "https://careers.example/closed", http_status: 200, evidence: "Official ATS explicitly reports this position is closed." });
+    await api("remove_job", { id: job.id, reason: "Verified posting closure" });
+    assert.equal((await api("get_job", { id: job.id })).job.previous_status, job.status);
+    await api("restore_job", { id: job.id });
+    assert.equal((await api("get_job", { id: job.id })).job.status, job.status);
+  }
+});
+
+test("explicit closure permits AI application removal, retains history and restores the application stage", async () => {
+  const app = await add("NVIDIA", "Applied closure fixture", { notes: "Application notes must survive" });
+  const dates = { applied_date: "2026-09-02T12:00:00.000Z", interview_at: "2026-10-20T12:00:00.000Z", decision_at: "2026-10-21T12:00:00.000Z" };
+  await api("update_job", { id: app.id, status: "applied", ...dates });
+  await api("grant_client", { client_id: "closure-lifecycle", label: "Owner-selected closure client", permissions: ["read", "write", "remove", "restore", "history"] });
+  await identity(owner, "closure-lifecycle");
+  const evidence = { availability: "closed", source: "https://careers.example/closed-role", method: "employer_explicit", confidence: "high", http_status: 200, evidence: "Employer explicitly states that this position has been filled." };
+  for (const patch of [{ method: "timeout" }, { method: "blocked", http_status: 403 }, { http_status: 403 }, { http_status: 500 }, { confidence: "low" }, { evidence: "Old posting" }, { source: "" }]) {
+    await api("submit_verification", { id: app.id, ...evidence, ...patch });
+    assert.equal((await api("get_job", { id: app.id })).job.availability, "uncertain");
+    await assert.rejects(api("remove_job", { id: app.id, reason: "Uncertain closure" }), /Application-stage/);
+  }
+  await db.exec("set role authenticated");
+  try {
+    await assert.rejects(db.query("update public.jobs set status='jobs_deleted',availability='closed',verification=$2::jsonb,removal_reason='Combined bypass' where id=$1", [app.id, JSON.stringify(evidence)]), /Application-stage/);
+  } finally { await db.exec("reset role"); }
+  await api("submit_verification", { id: app.id, ...evidence });
+  assert.equal((await api("get_job", { id: app.id })).job.status, "applied");
+  const batch = await api("bulk_remove_jobs", { ids: [app.id], reason: "Employer explicitly closed this posting" });
+  assert.equal(batch.results[0].outcome, "ok");
+  const deleted = (await api("get_job", { id: app.id })).job;
+  assert.equal(deleted.previous_status, "applied"); assert.equal(deleted.notes, app.notes);
+  for (const [field, date] of Object.entries(dates)) assert.equal(new Date(deleted[field]).toISOString(), date);
+  assert.equal(deleted.verification.evidence, evidence.evidence);
+  const event = (await api("list_activity", { action: "removed", client_id: "closure-lifecycle" })).events.find((e: any) => e.job_id === app.id);
+  assert.equal(event.previous_status, "applied"); assert.equal(event.new_status, "jobs_deleted");
+  assert.equal(event.reason, "Employer explicitly closed this posting"); assert.equal(event.batch_id, batch.batch_id);
+  assert.equal(event.actor_type, "ai_agent"); assert.equal(event.actor_label, "Owner-selected closure client");
+  await assert.rejects(api("update_job", { id: app.id, status: "jobs_found" }), /previous status/);
+  await api("restore_job", { id: app.id });
+  assert.equal((await api("get_job", { id: app.id })).job.status, "applied");
+  await api("update_job", { id: app.id, status: "jobs_deleted", reason: "Verified closure through generic status path" });
+  await api("restore_job", { id: app.id });
+  await identity();
+  await api("submit_verification", { id: app.id, ...evidence, availability: "open" });
+  await api("remove_job", { id: app.id, reason: "Owner explicitly removes an open application" });
+  assert.equal((await api("get_job", { id: app.id })).job.previous_status, "applied");
+});
+
 test("403, timeout, weak evidence cannot establish closure", async () => {
   const j = await add("Verification Labs");
   for (const args of [

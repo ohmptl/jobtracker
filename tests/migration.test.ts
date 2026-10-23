@@ -60,6 +60,24 @@ test("upgrade preserves legacy applications, dates and notes, maps dismissed, an
       ).rows[0].n,
       0,
     );
+    await db.exec("create role supabase_auth_admin");
+    for (const file of ["202610230003_resource_audience.sql", "202610230004_verification.sql", "202610230005_explicit_json_default.sql", "202610230006_retire_legacy_mcp.sql", "202610230007_search_all_job_fields.sql"])
+      await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
+    await db.exec(`select set_config('request.jwt.claims','{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated"}',false);
+      update public.jobs set protected=true where company='Intel';
+      insert into public.tracker_clients(user_id,client_id,label,permissions) values('11111111-1111-4111-8111-111111111111','existing-client','Preserved owner label',array['read','write','remove','restore','history','protect','policy']);
+      insert into public.cleanup_previews(user_id,policy_version,candidates) values('11111111-1111-4111-8111-111111111111',1,'[]');`);
+    const snapshot = async () => (await db.query<{ jobs: unknown; events: unknown }>(`select
+      (select jsonb_agg(to_jsonb(j) order by id) from public.jobs j) jobs,
+      (select jsonb_agg(to_jsonb(e) order by id) from public.activity_events e) events`)).rows[0];
+    const before = await snapshot();
+    await db.exec(readFileSync("supabase/migrations/202610230008_simplify_lifecycle.sql", "utf8"));
+    assert.deepEqual(await snapshot(), before, "Every stored job and historical Feed field survives simplification exactly");
+    const client = (await db.query<{ label: string; permissions: string[] }>("select label,permissions from public.tracker_clients where client_id='existing-client'")).rows[0];
+    assert.equal(client.label, "Preserved owner label");
+    assert.deepEqual(client.permissions, ["read", "write", "remove", "restore", "history"]);
+    const objects = (await db.query<{ policies: string | null; previews: string | null; aliases: string | null }>("select to_regclass('public.cleanup_policies')::text policies,to_regclass('public.cleanup_previews')::text previews,to_regclass('public.company_aliases')::text aliases")).rows[0];
+    assert.equal(objects.policies, null); assert.equal(objects.previews, null); assert.equal(objects.aliases, "company_aliases");
   } finally {
     await db.close();
   }

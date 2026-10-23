@@ -1,9 +1,4 @@
-import { CleanupReview } from "@/components/cleanup-review";
+import { redirect } from "next/navigation";
 export default function CleanupPage() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">Cleanup review</h1>
-      <CleanupReview />
-    </div>
-  );
+  redirect("/dashboard/research");
 }

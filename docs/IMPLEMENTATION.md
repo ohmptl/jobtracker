@@ -1,5 +1,9 @@
 # Job Tracker v2 implementation record
 
+Current architecture: release 3.1.0; [LIFECYCLE.md](LIFECYCLE.md) supersedes the
+original cleanup-engine design. Historical baseline details below describe the
+original upgrade, not current production behavior.
+
 ## Baseline and roadmap
 
 Repository: Next.js App Router, Supabase Auth/Postgres, Vercel, MCP SDK 1.x.
@@ -16,7 +20,7 @@ Milestones (updated as work is verified):
 - [x] Additive database migration, centralized permissions, audit and retention.
 - [x] Shared paginated management API and MCP schemas, compatibility alias.
 - [x] Supabase OAuth resource server, consent, client grants and revocation code.
-- [x] Versioned cleanup, protected employers, verification and maintenance code.
+- [x] Status-based lifecycle, explicit closure exception and retention-only maintenance; cleanup engine retired.
 - [x] Feed, complete grouped application collection, single-job review queue and analytics.
 - [x] Automatic full-field search, Applied shortcuts, row cards and separate editing.
 - [x] Automated database/API/UI checks, deployment and recovery guide.
@@ -24,8 +28,8 @@ Milestones (updated as work is verified):
 - [x] Native OAuth setup, audience validation, browser consent, SDK refresh/revocation.
 - [x] Hosted browser workflows at six widths and concurrent fixture restore/purge.
 - [x] Operator health probe and removal of legacy token infrastructure.
-- [ ] Actual owner AI-client/daily-workflow OAuth reconnection.
-- [ ] First natural scheduled runs, external alert delivery and broad cleanup review.
+- [x] Owner confirmed ChatGPT OAuth connection and live read-only tool calls.
+- [ ] Real job evaluation/cleanup is deferred to later user instructions; external alert delivery remains optional.
 
 ## Decisions
 
@@ -41,9 +45,9 @@ Milestones (updated as work is verified):
   configuration forms are removed; backend lifecycle safeguards remain.
 - Exactly 30 days of recovery. Tombstones default to 120 days, audit snapshots
   to 180 days. Settings cannot extend full deleted record retention.
-- Automated removal only touches Jobs Found/Snoozed. Protected open roles and
-  every application stage are excluded. Small-company internship classification
-  requires an explicit low-priority evaluation with an explanation.
+- Agents choose explicit removals. Jobs Found/Snoozed have no employer or
+  priority exemptions. Application stages need recorded explicit closure before
+  AI removal. Maintenance only purges already Deleted records after 30 days.
 - Verification submission and a scheduled exact-host allowlist verifier are
   implemented. DNS validation/pinning, HTTPS, redirect, byte and time limits
   restrict outbound fetches; blocked/timeout results remain uncertain.
@@ -54,7 +58,7 @@ Milestones (updated as work is verified):
 No `.env.local`, Supabase access token, linked project, Vercel credentials,
 Node, pnpm, Docker or Supabase CLI was initially present. Local tooling was
 installed for checks. Authenticated WSL access later supplied Node 24.21.0,
-pnpm 12.15.0, Supabase CLI 2.121.0 and Vercel CLI 65.2.0. Seven migrations are
+pnpm 12.15.0, Supabase CLI 2.121.0 and Vercel CLI 65.2.0. Eight migrations are
 applied and production deployed. All original job fields except intentionally
 refreshed `updated_at` remain unchanged. No original job was removed or purged.
 

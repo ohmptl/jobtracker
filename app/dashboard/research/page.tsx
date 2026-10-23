@@ -32,12 +32,6 @@ export default async function ResearchPage({
         >
           Deleted
         </Link>
-        <Link
-          className="rounded-md border px-3 py-2"
-          href="/dashboard/cleanup"
-        >
-          Cleanup review
-        </Link>
       </nav>
       <JobBrowser
         key={view || "found"}

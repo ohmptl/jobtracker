@@ -18,29 +18,22 @@ export const descriptions: Partial<Record<Operation, string>> = {
   get_ingestion_runs:
     "Get up to 50 recent ingestion run summaries by source and before timestamp. Use the last successful completed_at as the next discovery lower bound.",
   update_job:
-    "Update metadata. dismissed is a deprecated alias of jobs_deleted. AI clients cannot alter application history or active pipeline stages.",
+    "Edit job metadata and priority without automatic cleanup. AI stage moves are limited to Jobs Found/Snoozed, removal, and restoration. Application dates/stages are owner-managed. dismissed aliases jobs_deleted and uses the same removal guard; supply a reason.",
   remove_job:
-    "Move an eligible job to Deleted for exactly 30 days. Authorized autonomous removal is allowed; protected open roles and application stages are guarded.",
+    "Directly move Jobs Found/Snoozed to Deleted for 30 days, regardless of employer or priority. Applications require confirmed closure recorded first with submit_verification. Supply a removal reason. No cleanup preview is required.",
   bulk_remove_jobs:
     "Recoverably remove at most 100 explicit IDs; returns every individual outcome and batch ID.",
-  restore_job: "Restore a Deleted job before its 30-day recovery deadline.",
+  restore_job: "Restore a Deleted job to its exact previous status before the 30-day recovery deadline, preserving application history.",
   purge_job:
     "Permanently purge a Deleted job only with separate purge permission and confirmation PURGE:<ID>. Irreversible.",
-  preview_cleanup:
-    "Create a 15-minute versioned preview of at most 100 eligible jobs with evidence. Does not change jobs.",
-  execute_cleanup:
-    "Execute a preview atomically after validating actor, policy version, expiry and each job revision. Retry-safe.",
   submit_verification:
-    "Record posting evidence. Blocks, timeouts, login requirements and transient errors remain uncertain. Closure requires explicit employer/ATS evidence and high confidence.",
+    "Record explicit employer/ATS posting evidence with source URL and high confidence to confirm closure. Blocks, timeouts and transient errors remain uncertain. This never removes a job; call remove_job or bulk_remove_jobs afterward, including for a confirmed-closed application.",
   list_activity:
     "Page through persisted audit events by action, actor and search. Actor labels derive from authenticated client grants.",
 };
 const humanOnly = new Set<Operation>([
   "grant_client",
   "revoke_client",
-  "save_company",
-  "delete_company",
-  "save_policy",
   "clear_history",
 ]);
 const readOnly = new Set<Operation>([
@@ -51,7 +44,6 @@ const readOnly = new Set<Operation>([
   "jobs_needing_verification",
   "list_activity",
   "get_settings",
-  "preview_cleanup",
   "get_ingestion_runs",
 ]);
 export function createTrackerServer(ctx: TrackerContext) {
@@ -59,7 +51,7 @@ export function createTrackerServer(ctx: TrackerContext) {
     { name: "personal-job-tracker", version: INTEGRATION_VERSION },
     {
       instructions:
-        "Use find_existing_job before ingestion. Listings are paginated. Authorized cleanup is recoverable for 30 days. Preserve strategic employers, specialized hardware roles and all application-stage records. Never infer closed from a block or timeout. Actor names in job input are not identity evidence.",
+        "Use find_existing_job before ingestion and follow pagination cursors. You determine career value and cleanup choices from the user's instructions; the backend does not score employers or roles. Direct authorized removals are recoverable for 30 days. Application-stage removal requires previously submitted explicit closure evidence; never infer closure from age, a block or timeout. Actor names in job input are not identity evidence.",
     },
   );
   for (const operation of Object.keys(toolSchemas) as Operation[]) {
@@ -73,9 +65,7 @@ export function createTrackerServer(ctx: TrackerContext) {
         annotations: {
           readOnlyHint: readOnly.has(operation),
           destructiveHint: operation === "purge_job",
-          idempotentHint: !["preview_cleanup", "add_job_found"].includes(
-            operation,
-          ),
+          idempotentHint: operation !== "add_job_found",
           openWorldHint: false,
         },
       },

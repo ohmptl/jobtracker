@@ -4,9 +4,6 @@ import { toolSchemas, type Operation } from "../lib/tracker/schemas";
 import { descriptions } from "../lib/tracker/mcp";
 import { INTEGRATION_VERSION } from "../lib/tracker/integration-diagnostics";
 const ownerOnly = new Set([
-  "save_policy",
-  "save_company",
-  "delete_company",
   "grant_client",
   "revoke_client",
   "clear_history",

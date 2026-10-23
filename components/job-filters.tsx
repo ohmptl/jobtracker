@@ -29,7 +29,6 @@ export function JobFilters({ filters, applications, research, onChange, onReset,
       <details className="min-w-0 flex-1"><summary className="cursor-pointer py-1 text-xs font-medium">More filters</summary><div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {select("priority", "Career priority", ["strategic", "relevant_full_time", "review", "low", "expired", "ineligible"], "Any priority")}
         {select("availability", "Posting availability", ["open", "closed", "uncertain", "not_checked"], "Any availability")}
-        <label className="text-xs text-muted-foreground">Protection<select className="mt-1 text-sm text-foreground" aria-label="Protection" value={value("protected")} onChange={e => onChange("protected", e.target.value)}><option value="">Any</option><option value="true">Protected</option><option value="false">Unprotected</option></select></label>
         {[["added_after", "Added since (UTC)"], ["posted_after", "Posted since"]].map(([key,title]) => <label key={key} className="text-xs text-muted-foreground">{title}<Input className="mt-1" aria-label={title} type="date" value={value(key)} onChange={e => onChange(key, e.target.value)} /></label>)}
         <label className="text-xs text-muted-foreground">Source<Input className="mt-1" aria-label="Source" value={value("source")} onChange={e => onChange("source", e.target.value)} /></label>
       </div><Button className="mt-2" size="sm" variant="ghost" onClick={onRestore}>Use saved filters</Button></details>

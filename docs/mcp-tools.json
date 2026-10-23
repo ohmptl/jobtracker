@@ -1,5 +1,5 @@
 {
-  "version": "3.0.1",
+  "version": "3.1.0",
   "tools": [
     {
       "name": "list_jobs",
@@ -116,9 +116,6 @@
               "expired",
               "ineligible"
             ]
-          },
-          "protected": {
-            "type": "boolean"
           },
           "availability": {
             "type": "string",
@@ -528,7 +525,7 @@
     },
     {
       "name": "update_job",
-      "description": "Update metadata. dismissed is a deprecated alias of jobs_deleted. AI clients cannot alter application history or active pipeline stages.",
+      "description": "Edit job metadata and priority without automatic cleanup. AI stage moves are limited to Jobs Found/Snoozed, removal, and restoration. Application dates/stages are owner-managed. dismissed aliases jobs_deleted and uses the same removal guard; supply a reason.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -686,9 +683,6 @@
               "ineligible"
             ]
           },
-          "protected": {
-            "type": "boolean"
-          },
           "evaluation_reason": {
             "type": "string",
             "maxLength": 2000
@@ -770,9 +764,6 @@
           "reason": {
             "type": "string",
             "maxLength": 1000
-          },
-          "override_protection": {
-            "type": "boolean"
           }
         },
         "required": [
@@ -782,7 +773,7 @@
     },
     {
       "name": "remove_job",
-      "description": "Move an eligible job to Deleted for exactly 30 days. Authorized autonomous removal is allowed; protected open roles and application stages are guarded.",
+      "description": "Directly move Jobs Found/Snoozed to Deleted for 30 days, regardless of employer or priority. Applications require confirmed closure recorded first with submit_verification. Supply a removal reason. No cleanup preview is required.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -800,9 +791,6 @@
           "context": {
             "type": "string",
             "maxLength": 1000
-          },
-          "override_protection": {
-            "type": "boolean"
           }
         },
         "required": [
@@ -842,7 +830,7 @@
     },
     {
       "name": "restore_job",
-      "description": "Restore a Deleted job before its 30-day recovery deadline.",
+      "description": "Restore a Deleted job to its exact previous status before the 30-day recovery deadline, preserving application history.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -884,33 +872,6 @@
           "id",
           "confirmation",
           "reason"
-        ]
-      }
-    },
-    {
-      "name": "preview_cleanup",
-      "description": "Create a 15-minute versioned preview of at most 100 eligible jobs with evidence. Does not change jobs.",
-      "inputSchema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "execute_cleanup",
-      "description": "Execute a preview atomically after validating actor, policy version, expiry and each job revision. Retry-safe.",
-      "inputSchema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-          "preview_id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          }
-        },
-        "required": [
-          "preview_id"
         ]
       }
     },
@@ -1030,9 +991,6 @@
               "ineligible"
             ]
           },
-          "protected": {
-            "type": "boolean"
-          },
           "availability": {
             "type": "string",
             "enum": [
@@ -1076,7 +1034,7 @@
     },
     {
       "name": "submit_verification",
-      "description": "Record posting evidence. Blocks, timeouts, login requirements and transient errors remain uncertain. Closure requires explicit employer/ATS evidence and high confidence.",
+      "description": "Record explicit employer/ATS posting evidence with source URL and high confidence to confirm closure. Blocks, timeouts and transient errors remain uncertain. This never removes a job; call remove_job or bulk_remove_jobs afterward, including for a confirmed-closed application.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",

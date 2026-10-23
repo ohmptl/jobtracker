@@ -19,7 +19,6 @@ const job: Job = {
   updated_at: "2026-10-22T12:00:00Z",
   notes: "Technical hardware work.",
   priority: "strategic",
-  protected: false,
   availability: "not_checked",
   evaluation_reason: "Relevant early-career engineering opportunity.",
   deleted_at: null,

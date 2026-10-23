@@ -28,7 +28,7 @@ export const shortDate = (value?: string | null) => value ? new Date(value.lengt
 export function JobMenu({ job, ...actions }: JobActions & { job: Job }) {
   return <DropdownMenu><DropdownMenuTrigger asChild><Button size="icon" className="size-8 shrink-0" variant="ghost" aria-label={`Actions for ${job.position}`} disabled={actions.pending}><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      {job.status !== "jobs_deleted" && <><DropdownMenuItem onClick={() => actions.edit(job)}>Edit details / notes</DropdownMenuItem><DropdownMenuItem onClick={() => void actions.mutate("update_job", { id: job.id, protected: !job.protected })}>{job.protected ? "Unprotect job" : "Protect job"}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuLabel>Move to stage</DropdownMenuLabel>{statuses.filter(s => s !== "jobs_deleted" && s !== job.status).map(s => <DropdownMenuItem key={s} onClick={() => void actions.mutate("update_job", { id: job.id, status: s })}>{jobLabel(s)}</DropdownMenuItem>)}<DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => actions.remove(job)}>Move to Deleted</DropdownMenuItem></>}
+      {job.status !== "jobs_deleted" && <><DropdownMenuItem onClick={() => actions.edit(job)}>Edit details / notes</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuLabel>Move to stage</DropdownMenuLabel>{statuses.filter(s => s !== "jobs_deleted" && s !== job.status).map(s => <DropdownMenuItem key={s} onClick={() => void actions.mutate("update_job", { id: job.id, status: s })}>{jobLabel(s)}</DropdownMenuItem>)}<DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => actions.remove(job)}>Move to Deleted</DropdownMenuItem></>}
       {job.status === "jobs_deleted" && <DropdownMenuItem onClick={() => void actions.mutate("restore_job", { id: job.id })}>Restore</DropdownMenuItem>}
     </DropdownMenuContent>
   </DropdownMenu>;
@@ -41,7 +41,7 @@ export function JobCard({ job, ...actions }: JobActions & { job: Job }) {
   const other = [["Posted", job.posted_date ? shortDate(job.posted_date) : null], ["Source", job.source], ["Requisition", job.requisition_id], ["Career priority", jobLabel(job.priority)], ["Evaluation", job.evaluation_reason], ["Review flags", job.review_flags?.map(jobLabel).join(", ")], ["Availability", jobLabel(job.availability)], ["Last checked", job.last_verified_at ? formatUtc(job.last_verified_at) : null]];
   return <article id={job.id} className="min-w-0 overflow-hidden rounded-lg border bg-card">
     <header className="space-y-2 p-4 pr-10 sm:p-5 sm:pr-12">
-      <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-muted-foreground">{job.company}</span><Badge variant="outline" className={stageColor[job.status]}>{jobLabel(job.status)}</Badge>{(job.protected || job.company_protected) && <Badge variant="outline">Protected</Badge>}</div>
+      <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-muted-foreground">{job.company}</span><Badge variant="outline" className={stageColor[job.status]}>{jobLabel(job.status)}</Badge></div>
       <h2 className="break-words text-xl font-semibold leading-snug sm:text-2xl">{job.position}</h2>
       {job.location && <p className="text-sm text-muted-foreground">{job.location}</p>}
     </header>

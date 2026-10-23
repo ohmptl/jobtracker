@@ -207,13 +207,14 @@ test("actual MCP discovery and calls expose matching deletion schemas and all ma
       "bulk_remove_jobs",
       "restore_job",
       "purge_job",
-      "preview_cleanup",
-      "execute_cleanup",
       "list_activity",
       "submit_verification",
     ])
       assert(names.includes(name));
-    assert(!names.includes("grant_client"));
+    for (const retired of ["grant_client", "preview_cleanup", "execute_cleanup", "save_policy", "save_company"])
+      assert(!names.includes(retired));
+    assert(!JSON.stringify(list.tools).includes('"override_protection"'));
+    assert(!JSON.stringify(list.tools).includes('"protected"'));
     const schema = JSON.stringify(
       list.tools.find((t) => t.name === "update_job")!.inputSchema,
     );

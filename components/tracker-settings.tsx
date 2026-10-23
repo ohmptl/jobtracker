@@ -75,7 +75,6 @@ export function TrackerSettings({
                 "remove",
                 "restore",
                 "history",
-                "protect",
                 "purge",
               ].map((p) => (
                 <label className="flex min-h-11 items-center gap-3" key={p}>

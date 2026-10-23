@@ -17,7 +17,7 @@ test("integration diagnostics include correlation and release without authentica
     );
     assert.equal(response.status, 303);
     assert.equal(response.headers.get("cache-control"), "no-store");
-    assert.equal(response.headers.get("x-job-tracker-version"), "3.0.1");
+    assert.equal(response.headers.get("x-job-tracker-version"), "3.1.0");
     const entry = JSON.parse(lines[0]);
     assert.equal(entry.request_id, response.headers.get("x-request-id"));
     assert.equal(entry.status, 303);

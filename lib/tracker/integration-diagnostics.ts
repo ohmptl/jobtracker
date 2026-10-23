@@ -1,4 +1,4 @@
-export const INTEGRATION_VERSION = "3.0.1";
+export const INTEGRATION_VERSION = "3.1.0";
 
 type Stage = "configuration" | "transport" | "authentication" | "grant" | "consent";
 type Reason =

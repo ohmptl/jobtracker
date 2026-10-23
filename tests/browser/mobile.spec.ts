@@ -20,7 +20,6 @@ for (const width of [320, 375, 390, 430, 768, 1440]) {
           added_date: "2026-10-22T12:00:00Z",
           updated_at: "2026-10-22T12:00:00Z",
           priority: "strategic",
-          protected: false,
           availability: "not_checked",
           review_flags: [],
           notes: "Technical hardware work.",
@@ -58,14 +57,8 @@ for (const width of [320, 375, 390, 430, 768, 1440]) {
     await page.getByText("More details", { exact: true }).click();
     await expect(page.getByText("Technical hardware work.")).toBeVisible();
     await page.getByRole("button", { name: "Actions for 2027 New Graduate Silicon Validation Engineer" }).click();
-    await page.getByRole("menuitem", { name: "Protect job", exact: true }).click();
-    await expect
-      .poll(() =>
-        calls.some(
-          (c) => c.operation === "update_job" && c.args.protected === true,
-        ),
-      )
-      .toBe(true);
+    await expect(page.getByRole("menuitem", { name: /[Uu]n?protect job/ })).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Move to Apply", exact: true }).click();
     await expect
       .poll(() =>

@@ -1,16 +1,16 @@
 # Deployment, OAuth cutover and recovery
 
-**Production is live at https://job.ohmptl.com** as of 2026-10-23. Seven migrations,
-native OAuth/PKCE/DCR, resource-audience claims, actual browser consent, SDK MCP,
-refresh/revocation, isolation and concurrent restore/purge passed with synthetic
-fixtures. All 1,130 original jobs remain intact. See [DELIVERY.md](DELIVERY.md)
-for exact evidence and limitations.
+**Production is live at https://job.ohmptl.com**. The current architecture is
+release 3.1.0 with migration `202610230008_simplify_lifecycle.sql`; see
+[LIFECYCLE.md](LIFECYCLE.md). OAuth account linking and tool invocation were
+confirmed from ChatGPT after the signing fix in [OAUTH-INCIDENT.md](OAUTH-INCIDENT.md).
+Existing connections and labels remain valid. Refresh discovery for the reduced
+16-tool contract; do not recreate native OAuth registrations unnecessarily.
 
-The owner must reconnect actual AI clients/daily workflows to
-`https://job.ohmptl.com/mcp` using OAuth. URL-token access is removed: the route,
-database bridge, grant records, hosting variables and six token-bearing historical
-deployments are gone. Review policy previews before broad pruning. Settings now
-contains OAuth connections and activity privacy; preferences are expressed to agents.
+Cleanup policies/previews and employer/manual protection are retired. Agents
+choose explicit record mutations. Application-stage protection and the verified
+closure exception use one database guard. Maintenance only purges already
+Deleted records after 30 days. No real job cleanup is part of deployment.
 
 ## Current operator environment
 
@@ -228,7 +228,7 @@ the actual client, not a guessed callback URL. Supabase owns redirect validation
 PKCE, token exchange and refresh-token rotation. No custom token proxy is used.
 
 The consent screen grants `read` and separately selectable `write`, `remove`,
-`restore`, and `history`. Protection management and permanent purge are off by
+`restore`, and `history`. Permanent purge is off by
 default. Settings can adjust client grants and owner-selected display labels.
 Client IDs are taken from signed tokens and Supabase authorization details;
 unverified registered names are labeled unknown, not attributed to ChatGPT.
@@ -238,8 +238,8 @@ Supabase provider grant/refresh sessions. In-flight transactions may finish.
 Set `MCP_OAUTH_ENABLED=true` in the test deployment only after issuer/audience
 behavior is confirmed. Verify two users cannot read each other's records via
 MCP, direct REST, functions or Feed. Verify a read-only grant cannot mutate,
-missing delete permission fails, protection cannot be bypassed by renaming a
-company, and revoked/expired tokens fail.
+missing removal permission fails, application-stage guards reject generic status
+updates, explicit closure permits recovery-safe removal, and revoked/expired tokens fail.
 
 ## 5. Real-client reconnection
 
@@ -247,7 +247,7 @@ company, and revoked/expired tokens fail.
    to `https://<actual-app-host>/mcp` with OAuth. Complete sign-in and consent.
    If discovery cannot register a client, pre-register the callback URI shown by
    ChatGPT and supply that client ID/secret through the connector's supported UI.
-2. Refresh tool discovery or recreate the connection; cached schemas on the old
+2. Refresh tool discovery; existing OAuth credentials remain valid; cached schemas on the old
    connector cannot be changed merely by editing server code. Confirm
    `remove_job`, `bulk_remove_jobs`, `restore_job` and `jobs_deleted` are exposed.
 3. With a synthetic record, test list → add → update → remove → query Deleted →
@@ -287,11 +287,9 @@ Restore a provider snapshot into a separate recovery project first for an actual
 data-loss incident. Full records already purged require backup recovery, not
 `restore_job`; suppression tombstones cannot reconstruct a job.
 
-Broad production pruning is **not yet ready to start**. Hosted migrations,
-job/catalog backup, active cron, synthetic OAuth/deletion/restore and concurrent
-row locking are verified. Remaining gates: actual owner AI-client reconnection,
-protected registry/current policy preview review, and observed scheduled runs.
-Once these pass, authorized agents can autonomously remove batches of eligible
-Jobs Found/Snoozed roles. Each cleanup preview lasts 15 minutes, binds to its
-client, policy version and row revisions, and executes atomically. Ordinary
-`remove_job`/`bulk_remove_jobs` do not require a manual approval per job.
+Real job evaluation and cleanup are explicitly deferred to later agent/user
+instructions. No preview, employer registry review or career-value policy gate
+exists. Preserve the preflight job/Feed snapshot and compare every original
+field after the migration and synthetic hosted tests. Keep the retention cron
+active; it must not move active jobs into Deleted. See [LIFECYCLE.md](LIFECYCLE.md)
+for the exact migration and data boundary.

@@ -61,7 +61,8 @@ export default async function ConsentPage({
           </label>
         ))}
         <p className="text-sm text-muted-foreground">
-          Protected open roles and application stages remain guarded. You can
+          Open application stages are guarded against AI removal; confirmed
+          posting closure permits recoverable removal. You can
           revoke access in Settings. The displayed client name is supplied by
           its registration; verify the client ID and return address.
         </p>

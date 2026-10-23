@@ -44,9 +44,8 @@ export function JobBrowser({ initialPage, view = "research", detail = false }: {
         const data = await tracker("get_job", { id: initialId }, controller.signal);
         result = { jobs: [data.job], total: 1, has_more: false, next_cursor: null };
       } else {
-        const { status, protected: protection, added_after: added, ...rest } = selected;
+        const { status, added_after: added, ...rest } = selected;
         const args = { ...rest, statuses: status ? [status] : view === "research" ? [feed] : defaultStatuses[view],
-          ...(protection ? { protected: protection === "true" } : {}),
           ...(added ? { added_after: `${added}T00:00:00.000Z` } : {}) };
         result = view === "applications"
           ? await collectJobPages(after => tracker("list_jobs", { ...args, page_size: 100, ...(after ? { cursor: after } : {}) }, controller.signal))
@@ -97,9 +96,9 @@ export function JobBrowser({ initialPage, view = "research", detail = false }: {
   }
 
   async function remove(job: Job) {
-    const guarded = job.protected || job.company_protected || !["jobs_found", "jobs_snoozed"].includes(job.status);
-    if (guarded && !window.confirm(`Move ${job.position} at ${job.company} to Deleted, overriding its stage/protection? Recoverable for 30 days.`)) return;
-    if (await mutate("remove_job", { id: job.id, reason: "Owner removed via tracker", override_protection: guarded })) {
+    const guarded = !["jobs_found", "jobs_snoozed"].includes(job.status);
+    if (guarded && !window.confirm(`Move ${job.position} at ${job.company} to Deleted, preserving its application history? Recoverable for 30 days.`)) return;
+    if (await mutate("remove_job", { id: job.id, reason: "Owner removed via tracker" })) {
       setUndo(job.id);
       setOpened(null);
     }
@@ -110,7 +109,7 @@ export function JobBrowser({ initialPage, view = "research", detail = false }: {
     {!detail && <JobFilters filters={filters} applications={view === "applications"} research={view === "research"}
       onChange={(key,value) => { const next = { ...filters }; if (value) next[key] = value; else delete next[key]; updateFilters(next); }}
       onReset={() => updateFilters({})}
-      onRestore={() => { try { const stored = JSON.parse(localStorage.getItem(`jobtracker-${view}-filters`) || "{}"); updateFilters(stored); } catch { setError("Saved filters could not be read"); } }} />}
+      onRestore={() => { try { const stored = JSON.parse(localStorage.getItem(`jobtracker-${view}-filters`) || "{}"); delete stored.protected; updateFilters(stored); } catch { setError("Saved filters could not be read"); } }} />}
     {view === "research" && !detail && <div className="flex gap-2" aria-label="Review feeds">{[["jobs_found", "New jobs"], ["jobs_snoozed", "Snoozed"]].map(([status,title]) => <Button key={status} size="sm" variant={feed === status ? "default" : "outline"} disabled={mutating} onClick={() => { if (status === feed) return; ++sequence.current; request.current?.abort(); setFeed(status); setHistory([]); setCursor(null); }}>{title}</Button>)}</div>}
     {error && <p role="alert" className="rounded-lg border border-destructive p-3 text-sm text-destructive">{error}</p>}
     {undo && <div role="status" className="flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">Removed; recoverable for 30 days.<Button variant="outline" size="sm" disabled={mutating} onClick={async () => { if (await mutate("restore_job", { id: undo })) setUndo(null); }}>Undo removal</Button></div>}

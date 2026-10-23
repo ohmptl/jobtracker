@@ -77,7 +77,6 @@ export const listSchema = z.object({
   location: text(300).optional(),
   role_type: roleSchema.optional(),
   priority: prioritySchema.optional(),
-  protected: z.boolean().optional(),
   availability: availabilitySchema.optional(),
   source: text(200).optional(),
   added_after: z.iso.datetime({ offset: true }).optional(),
@@ -94,7 +93,6 @@ export const updateSchema = newJobSchema
     role_type: roleSchema.optional(),
     status: z.enum([...statuses, "dismissed"]).optional(),
     priority: prioritySchema.optional(),
-    protected: z.boolean().optional(),
     evaluation_reason: text(2000).optional(),
     review_flags: z
       .array(
@@ -114,7 +112,6 @@ export const updateSchema = newJobSchema
     interview_at: z.iso.datetime({ offset: true }).nullable().optional(),
     decision_at: z.iso.datetime({ offset: true }).nullable().optional(),
     reason: text(1000).optional(),
-    override_protection: z.boolean().optional(),
   });
 export const toolSchemas = {
   list_jobs: listSchema,
@@ -151,7 +148,6 @@ export const toolSchemas = {
     id,
     reason: text(1000).min(1),
     context: text(1000).optional(),
-    override_protection: z.boolean().optional(),
   }),
   bulk_remove_jobs: z.object({
     ids: z.array(id).min(1).max(100),
@@ -163,8 +159,6 @@ export const toolSchemas = {
     confirmation: text(100),
     reason: text(1000).min(1),
   }),
-  preview_cleanup: z.object({}),
-  execute_cleanup: z.object({ preview_id: id }),
   jobs_needing_verification: listSchema,
   submit_verification: z.object({
     id,
@@ -193,19 +187,6 @@ export const toolSchemas = {
       .optional(),
   }),
   get_settings: z.object({}),
-  save_policy: z.object({
-    ai_deletion: z.boolean().optional(),
-    automatic_expiration: z.boolean().optional(),
-    tombstone_days: z.number().int().min(30).max(180).optional(),
-    technical_domains: z.array(text(200)).max(50).optional(),
-    internship_standard: text(2000).optional(),
-  }),
-  save_company: z.object({
-    name: text(200).min(1),
-    aliases: z.array(text(200).min(1)).max(50).default([]),
-    protected: z.boolean().default(true),
-  }),
-  delete_company: z.object({ id }),
   grant_client: z.object({
     client_id: text(500).min(1),
     label: text(200).min(1),
@@ -218,12 +199,10 @@ export const toolSchemas = {
           "restore",
           "purge",
           "history",
-          "protect",
-          "policy",
         ]),
       )
       .min(1)
-      .max(8),
+      .max(6),
   }),
   revoke_client: z.object({ client_id: text(500).min(1) }),
   clear_history: z.object({ before: z.iso.datetime({ offset: true }) }),
@@ -265,8 +244,6 @@ export type Job = z.infer<typeof newJobSchema> & {
   added_date: string;
   updated_at: string;
   priority: z.infer<typeof prioritySchema>;
-  protected: boolean;
-  company_protected?: boolean;
   availability: z.infer<typeof availabilitySchema>;
   evaluation_reason: string | null;
   deleted_at: string | null;

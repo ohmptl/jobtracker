@@ -169,6 +169,7 @@ try {
   } }));
   stage = 'published MCP tool names';
   const tools = (await mcp.listTools()).tools;
+  assert(!tools.some((tool) => ['preview_cleanup', 'execute_cleanup'].includes(tool.name)));
   assert.equal(mcp.getServerVersion().version, reference.version);
   assert.deepEqual(tools.map((tool) => tool.name).sort(), reference.tools.map((tool) => tool.name).sort());
   stage = 'published MCP tool input schemas';
@@ -188,7 +189,7 @@ try {
   pass('get_job_stats, list_jobs, get_settings, list_activity and find_existing_job');
 
   for (let index = 0; index < 2; index++) {
-    const added = await call('add_job_found', { company: 'Synthetic OAuth fixture', position: `Validation engineer ${index}`, url: `https://example.invalid/jobtracker-oidc/${userId}/${index}`, notes: 'Synthetic integration test only.' });
+    const added = await call('add_job_found', { company: ['NVIDIA', 'SpaceX'][index], position: `SYNTHETIC validation engineer ${index}`, url: `https://example.invalid/jobtracker-oidc/${userId}/${index}`, notes: 'Synthetic integration test only.' });
     assert(added.job?.id);
     fixtureIds.add(added.job.id);
   }
@@ -200,6 +201,8 @@ try {
   assert(!second.has_more);
   pass('Synthetic ingestion and cursor pagination');
   const id = first.jobs[0].id;
+  await call('update_job', { id, priority: 'low', notes: 'SYNTHETIC metadata edit; no genuine records involved.' });
+  assert.equal((await call('get_job', { id })).job.priority, 'low');
   assert.equal((await call('get_job', { id })).job.status, 'jobs_found');
   const duplicate = await call('find_existing_job', { url: first.jobs[0].url });
   assert(JSON.stringify(duplicate).includes(id));
@@ -211,8 +214,39 @@ try {
   assert(feed.events.some((event) => event.job_id === id && event.client_id === clientId && event.actor_type === 'ai_agent'));
   await call('restore_job', { id });
   assert.equal((await call('get_job', { id })).job.status, 'jobs_found');
-  await call('remove_job', { id, reason: 'Remove synthetic fixture after restore test' });
-  pass('Get, Deleted, exact 30-day recovery, Feed actor identity, restore to Jobs Found and re-remove');
+  const bulk = await call('bulk_remove_jobs', { ids: [id, second.jobs[0].id], reason: 'Remove these exact synthetic fixtures after restore test' });
+  assert(bulk.results.every((result) => result.outcome === 'ok'));
+  pass('Metadata update, direct/bulk removal regardless of employer/priority, 30-day retention, Feed and restore');
+
+  const application = await call('add_job_found', { company: 'Apple', position: 'SYNTHETIC application lifecycle validation', url: `https://example.invalid/jobtracker-oidc/${userId}/application`, notes: 'SYNTHETIC application notes to preserve.' });
+  const appId = application.job.id;
+  fixtureIds.add(appId);
+  const appliedDate = '2026-09-02T12:00:00.000Z';
+  await rpc('update_job', { id: appId, status: 'applied', applied_date: appliedDate });
+  await call('update_job', { id: appId, priority: 'low' });
+  for (const [name, args] of [['remove_job', { id: appId, reason: 'Unverified closure must fail' }], ['update_job', { id: appId, status: 'jobs_deleted', reason: 'Status bypass must fail' }]]) {
+    const denied = await mcp.callTool({ name, arguments: args });
+    assert(denied.isError);
+  }
+  const partial = await call('bulk_remove_jobs', { ids: [id, appId], reason: 'Synthetic mixed batch' });
+  assert.deepEqual(partial.results.map((result) => result.outcome), ['ok', 'rejected']);
+  const evidence = { id: appId, availability: 'closed', method: 'employer_explicit', confidence: 'high', source: application.job.url, evidence: 'Synthetic employer explicitly states this validation posting is closed.', http_status: 403 };
+  await call('submit_verification', evidence);
+  assert.equal((await call('get_job', { id: appId })).job.availability, 'uncertain');
+  assert((await mcp.callTool({ name: 'remove_job', arguments: { id: appId, reason: 'A 403 cannot qualify as closure' } })).isError);
+  await call('submit_verification', { ...evidence, http_status: 200 });
+  assert.equal((await call('get_job', { id: appId })).job.status, 'applied');
+  await call('remove_job', { id: appId, reason: 'Explicit synthetic posting closure' });
+  const closedApplication = (await call('get_job', { id: appId })).job;
+  assert.equal(closedApplication.previous_status, 'applied');
+  assert.equal(new Date(closedApplication.applied_date).toISOString(), appliedDate);
+  assert.equal(closedApplication.notes, application.job.notes);
+  const appFeed = await call('list_activity', { action: 'removed' });
+  assert(appFeed.events.some((event) => event.job_id === appId && event.previous_status === 'applied' && event.reason === 'Explicit synthetic posting closure' && event.client_id === clientId));
+  await call('restore_job', { id: appId });
+  assert.equal((await call('get_job', { id: appId })).job.status, 'applied');
+  await call('remove_job', { id: appId, reason: 'Synthetic application fixture cleanup' });
+  pass('Open application guards, mixed bulk failures, 403 rejection, verified-closure exception and exact application restoration');
 
   stage = 'refresh';
   const refreshed = await fetch(metadata.token_endpoint, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', client_id: clientId, refresh_token: tokens.refresh_token, resource }) });
