@@ -19,10 +19,12 @@ Milestones (updated as work is verified):
 - [x] Versioned cleanup, protected employers, verification and maintenance code.
 - [x] Feed, mobile job cards, server filtering, settings and analytics.
 - [x] Automated database/API/UI checks, deployment and recovery guide.
-- [ ] Hosted migration rehearsal, pg_cron verification and production deployment.
-- [ ] Provider OAuth setup, resource-audience validation and real-client sign-in.
-- [ ] Monitoring/alert hookup and production cleanup readiness review.
-- [ ] Successful OAuth cutover, explicit legacy retirement deadline and revocation.
+- [x] Hosted migration rehearsal, active pg_cron and production deployment.
+- [x] Native OAuth setup, audience validation, browser consent, SDK refresh/revocation.
+- [x] Hosted browser workflows at six widths and concurrent fixture restore/purge.
+- [x] Operator health probe and explicit legacy retirement deadline.
+- [ ] Actual owner AI-client/daily-workflow OAuth reconnection and legacy revocation.
+- [ ] First natural scheduled runs, external alert delivery and broad cleanup review.
 
 ## Decisions
 
@@ -46,10 +48,11 @@ Milestones (updated as work is verified):
 ## Environment and external checks
 
 No `.env.local`, Supabase access token, linked project, Vercel credentials,
-Node, pnpm, Docker or Supabase CLI was initially present. A checksum-verified
-Node 24.22.1 runtime, pnpm 12.15.0, Supabase CLI 2.121.0 and Chromium were installed
-for local checks. Production project configuration and OAuth sign-in require
-authenticated provider access. No production records have been mutated.
+Node, pnpm, Docker or Supabase CLI was initially present. Local tooling was
+installed for checks. Authenticated WSL access later supplied Node 24.21.0,
+pnpm 12.15.0, Supabase CLI 2.121.0 and Vercel CLI 65.2.0. Five migrations are
+applied and production deployed. All original job fields except intentionally
+refreshed `updated_at` remain unchanged. No original job was removed or purged.
 
 ## Verification record
 
@@ -60,11 +63,15 @@ advertises `dismissed`, not `jobs_deleted`, and no pagination inputs. A list of
 confirmed complete database inventory. No individual job values/notes were
 written to the repository, and no production mutation was attempted.
 
-See `DELIVERY.md` for test boundaries and `DEPLOYMENT.md` for exact external
-gates. Node tests cover real PostgreSQL-compatible migrations/RLS/triggers and
-the MCP SDK; Playwright covers six widths through actual component interactions.
-The Next.js production build uses public placeholder environment values; it does
-not prove that the hosted database or OAuth provider is configured.
+On 2026-10-23 the upgraded existing connection returned 50 rows with full
+`total=1130`, a cursor and `has_more=true`. The original `dismissed` bug passes
+against the production OAuth endpoint with a real SDK client. Hosted synthetic
+tests verified native PKCE, resource claims, refresh/revocation, browser consent,
+two-user isolation, responsive workflows and concurrent restore/purge. Final
+count is 1,130, with all 15 application-stage jobs preserved and no synthetic
+users left. All 24 Node and six component browser tests pass, along with lint,
+typecheck, the actual Vercel production build and hosted database lint.
+See `DELIVERY.md` for limitations and `DEPLOYMENT.md` for remaining owner steps.
 
 Sources consulted 2026-10-22:
 

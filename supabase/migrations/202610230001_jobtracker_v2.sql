@@ -168,6 +168,16 @@ $$;
 create function private.guard_job() returns trigger language plpgsql security definer set search_path='' as $$
 declare ai boolean := private.client_id() is not null; p public.cleanup_policies; owner_override boolean := false;
 begin
+ -- During the staged deployment the old MCP handler still performs trusted
+ -- service-role writes. Attribute these to the legacy connection and apply the
+ -- same guards until its grant is revoked after OAuth cutover.
+ if tg_op<>'DELETE' and auth.role()='service_role' and auth.uid() is null
+  and current_setting('jobtracker.maintenance',true) is distinct from 'yes' then
+  insert into public.tracker_clients(user_id,client_id,label,permissions)
+   values(new.user_id,'legacy-url-token','Legacy connection (unknown agent)',array['read','write','remove','restore','history']) on conflict do nothing;
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',new.user_id,'role','authenticated','client_id','legacy-url-token')::text,true);
+  ai:=true;
+ end if;
  if tg_op='DELETE' then
   if current_setting('jobtracker.purge',true) is distinct from 'yes' then raise exception 'Use purge_job; direct deletion is disabled'; end if;
   return old;

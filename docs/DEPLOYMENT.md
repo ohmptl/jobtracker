@@ -1,10 +1,49 @@
 # Deployment, OAuth cutover and recovery
 
-Code and local fixtures have been validated. **No hosted migration, deployment,
-OAuth login, real AI-client reconnection, or production cleanup has occurred.**
-The CLI is installed (2.121.0), but `supabase projects list` reports no access
-token. This checkout contains no deployment environment or Vercel credentials.
-Do not enable pruning on the existing connector until the checklist below passes.
+**Production is live at https://job.ohmptl.com** as of 2026-10-23. Five migrations,
+native OAuth/PKCE/DCR, resource-audience claims, actual browser consent, SDK MCP,
+refresh/revocation, isolation and concurrent restore/purge passed with synthetic
+fixtures. All 1,130 original jobs remain intact. See [DELIVERY.md](DELIVERY.md)
+for exact evidence and limitations.
+
+The owner must reconnect actual AI clients/daily workflows to
+`https://job.ohmptl.com/mcp` using OAuth. Legacy access remains usable until
+**2026-10-31 00:00 UTC**; its existing secret has not been rotated. Review
+protection/policy previews and observe the first scheduled runs before broad pruning.
+
+## Current operator environment
+
+Use WSL Linux tooling from this Windows checkout, not Windows `node_modules`:
+
+```sh
+export SUPABASE_HOME=/tmp/jobtracker-tools/supabase-home
+export XDG_DATA_HOME=/tmp/jobtracker-tools/vercel-data
+export PATH=/home/ohmptl/.local/share/fnm/node-versions/v24.21.0/installation/bin:/tmp/jobtracker-tools/bin:$PATH
+cd /mnt/c/Users/ohmptl/Code/jobtracker
+supabase migration list
+SUPABASE_CLI=/tmp/jobtracker-tools/bin/supabase node scripts/maintenance-health.mjs
+```
+
+Invoke a script containing these commands with `wsl.exe bash <script>` from
+PowerShell. Tooling/state under `/tmp` is temporary and may need reinstall/login
+after WSL restarts. Supabase's temporary `cli_login_postgres` role setup currently
+fails with a provider ADMIN-option error. Existing database authentication via
+`SUPABASE_DB_PASSWORD` works; obtain it through the managed credential store,
+keep it only in process memory, and never log it or download all production env.
+
+The CLI applied migrations, linked/checked the project and enabled site/hook
+configuration. CLI config mapping did not support OAuth authorization-path/DCR
+and hook URI settings; scoped official Management API updates set those fields.
+The existing unrelated Auth configuration was preserved. Do not push the root
+localhost sample config over production.
+
+The original private job/catalog export is `.tools/hosted/pre-upgrade-backup.json`.
+It is not an Auth/provider snapshot. Copy it to secure persistent backup storage.
+The deployment source was built with isolated Linux dependencies in
+`/tmp/jobtracker-build`; pinned build-script approvals are in `pnpm-workspace.yaml`.
+
+The sections below are a reusable checklist for future environments and recovery;
+their setup commands are not instructions to reset this already upgraded project.
 
 ## 1. Authenticate and inspect using Supabase CLI
 
@@ -42,8 +81,9 @@ pnpm exec supabase db advisors --linked
 ```
 
 Review migration history before pushing; resolve history drift explicitly.
-The four migrations add the model/RPCs, register daily pg_cron maintenance,
-provide the dormant access-token hook, and add service-only verification RPCs.
+The five migrations add the model/RPCs, register daily pg_cron maintenance,
+provide the access-token hook, add service-only verification RPCs, and make a
+JSON default cast explicit without changing the dispatcher's grants or behavior.
 No application tables are dropped. The old URL-only unique index becomes a
 nonunique index because distinct requisitions may share a landing URL.
 Legacy `dismissed` rows, if present, become `jobs_deleted`. Existing Deleted
@@ -65,11 +105,14 @@ successful scheduled run. Tombstones expire after 120 days by default (30–180
 configurable); audit and ingestion summaries after 180 days; run logs after 90.
 
 Record before/after row and status counts and sample application IDs/notes.
-Verify the `cron.job` entry and run `scripts/maintenance-health.sql` using the CLI.
-Connect its `alert_no_recent_success` result and non-null `failure` rows to the
-deployment's operator monitoring/alerts. Alert delivery is not configured in
-this checkout; do not represent it as active. Vercel cron HTTP failures must also
-be monitored in deployment logs.
+Verify the `cron.job` entry and run `node scripts/maintenance-health.mjs` with the
+authenticated CLI environment (`SUPABASE_CLI` overrides its executable path).
+The single JSON result includes schedule, recent runs and staleness; exit 1 means
+stale/failed/inactive, exit 2 means query failure. Connect this operator probe to
+the selected monitoring system. External alert delivery is not configured;
+Vercel cron HTTP failures must also be monitored in deployment logs. The guarded
+zero-change function run and a temporary actual pg_cron execution passed. The
+temporary schedule was removed; first regular daily execution is pending.
 
 ## 3. Configure and deploy the web application
 
@@ -82,6 +125,8 @@ scheduled verification. OAuth requests never use it.
 
 Set exact `EXTENSION_ALLOWED_ORIGINS` for the installed Chrome extension ID and
 any explicitly trusted site. Arbitrary reflected credentialed CORS is disabled.
+Production allows `chrome-extension://fbpbdbepncdjgofdginagebeggpkkpdk`, supplied
+by the owner for the current unpacked installation.
 Set `MCP_ALLOWED_ORIGINS` only when a browser-based MCP client needs an additional
 origin; native/server clients normally send no Origin. Do not use wildcards.
 
@@ -203,8 +248,8 @@ company, and revoked/expired tokens fail.
    and provider features passed. These tests cannot be substituted by unit tests.
 6. Repeat the verified configuration in production. Repoint daily discovery
    workflows to the new connection. Confirm scheduled tools still work.
-7. Set a short explicit UTC `MCP_LEGACY_DISABLE_AFTER` deadline (for example,
-   seven days after successful validation). At cutover set
+7. Production already has `MCP_LEGACY_DISABLE_AFTER=2026-10-31T00:00:00Z`.
+   Complete reconnection before that deadline. At cutover set
    `MCP_LEGACY_ENABLED=false`, remove/rotate `MCP_SECRET` and remove old client
    connection URLs. Revoke the `legacy-url-token` client grant. Remove
    `MCP_USER_ID` when retiring the bridge. Do not leave dual authentication
@@ -233,10 +278,10 @@ Restore a provider snapshot into a separate recovery project first for an actual
 data-loss incident. Full records already purged require backup recovery, not
 `restore_job`; suppression tombstones cannot reconstruct a job.
 
-Production pruning is **not yet verified safe to start**. Required gates:
-tested hosted migration and backups; cron enabled and monitored; a real MCP
-OAuth connection with correct user identity/grants; deletion/restore tested on
-synthetic data; protected registry reviewed; and a current policy preview.
+Broad production pruning is **not yet ready to start**. Hosted migrations,
+job/catalog backup, active cron, synthetic OAuth/deletion/restore and concurrent
+row locking are verified. Remaining gates: actual owner AI-client reconnection,
+protected registry/current policy preview review, and observed scheduled runs.
 Once these pass, authorized agents can autonomously remove batches of eligible
 Jobs Found/Snoozed roles. Each cleanup preview lasts 15 minutes, binds to its
 client, policy version and row revisions, and executes atomically. Ordinary

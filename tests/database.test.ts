@@ -67,9 +67,25 @@ before(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202610230004_verification.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/202610230005_explicit_json_default.sql", "utf8"),
+  );
   await identity();
 });
 after(async () => db.close());
+
+test('trusted old service-role writes use the revocable legacy identity during deployment',async()=>{
+ await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:'service_role'})])
+ const result=await db.query<{id:string}>(`insert into public.jobs(user_id,company,position,status) values($1,'Legacy bridge fixture','Synthetic validation','jobs_found') returning id`,[owner])
+ const id=result.rows[0].id
+ await identity()
+ const events=await api('list_activity',{action:'added'})
+ assert(events.events.some((event:{job_id:string;client_id:string;actor_label:string})=>event.job_id===id&&event.client_id==='legacy-url-token'&&event.actor_label==='Legacy connection (unknown agent)'))
+ await api('revoke_client',{client_id:'legacy-url-token'})
+ await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:'service_role'})])
+ await assert.rejects(db.query(`update public.jobs set notes='should fail' where id=$1`,[id]),/Permission denied: write/)
+ await identity()
+})
 
 test("server filters compose and alphabetical cursors preserve order", async () => {
   const b = await add("Sort B", "FPGA New Graduate", {

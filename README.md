@@ -12,8 +12,11 @@ MCP management API. This upgrade preserves the existing Next.js/Vercel stack.
 
 ## Status and documentation
 
-Implemented and locally tested; **not deployed or production-verified**. OAuth
-cutover requires authenticated Supabase/Vercel access and a real client sign-in.
+Live at **https://job.ohmptl.com**. Five additive migrations are applied; all
+1,130 original jobs are preserved. Hosted browser, native OAuth/PKCE, SDK MCP,
+revocation, isolation and concurrent restore/purge checks passed with synthetic
+fixtures. Reconnect AI clients to `https://job.ohmptl.com/mcp` using OAuth.
+The existing URL-token connection expires **2026-10-31 at 00:00 UTC**.
 
 - [Implementation and validation report](docs/DELIVERY.md)
 - [Deployment, OAuth setup, reconnection and rollback](docs/DEPLOYMENT.md)
@@ -37,7 +40,7 @@ pnpm build
 
 The SQL/permission tests use synthetic data in an isolated PostgreSQL engine.
 Browser tests use the actual components in a fixture harness with a simulated
-API; hosted OAuth and full authenticated end-to-end checks remain separate.
+API; separate authenticated hosted checks are recorded in the delivery report.
 
 Apply `supabase/migrations` with the authenticated Supabase CLI after backing up
 and rehearsing on a test project. **Do not run `scripts/000_master_setup.sql`

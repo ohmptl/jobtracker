@@ -1,124 +1,148 @@
 # Job Tracker v2 delivery report
 
-## Actual status
+## Deployment status — 2026-10-23
 
-Implemented in this checkout and locally tested. Production is unchanged.
-Hosted migration, OAuth settings, real-client login, token refresh/revocation,
-cron execution, deployment and production pruning remain blocked on provider
-credentials and sign-in. The installed Supabase CLI explicitly reports no access
-token; no `.env.local` or Vercel configuration was supplied.
+**Live: https://job.ohmptl.com. OAuth MCP: https://job.ohmptl.com/mcp.**
+Production deployment `dpl_73eYqTiM51xrgAUD6BJ2nGscjvCn`
+(`job-gfqwrh7yp-ohmptls-projects.vercel.app`) was built and promoted to the existing
+custom domain. Supabase project `cpwcusyinnsstcirxaom` has five migrations applied.
+Native OAuth, S256 PKCE, public-client dynamic registration, the resource-audience
+hook and refresh/revocation work. No signing keys or account credentials rotated.
 
-## Implementation by phase
+The current ChatGPT legacy connection still lists jobs successfully. Its cached
+tool schema requires refresh/reconnection; the new server returns 50 bounded
+rows, full `total=1130`, `has_more=true` and a cursor. The original `dismissed`
+input now reaches recoverable Deleted through the production SDK endpoint.
 
-| Phase | Implemented | Verification boundary |
-|---|---|---|
-| 0 | Repository audit, checked-in roadmap, architecture decisions, identification of unbounded queries and unsafe deletion. | Connected legacy schema confirmed `dismissed` without `jobs_deleted`; listing returned a capped 1,000 rows with no pagination metadata. |
-| 1 | Shared status/validation model, deprecated `dismissed` adapter, paginated search, get/stats/duplicate checks, bulk ingestion/removal, restore/purge, canonical URLs and ingestion summaries. | Local Postgres-compatible database and actual MCP SDK discovery/calls. |
-| 2 | Supabase OAuth resource endpoint/discovery/challenges, strict issuer/resource/expiry/client validation, native consent UI, granular client grants, immediate app revocation, audience hook, staged legacy bridge. | Code and claim/grant/hook tests; provider code+PKCE exchange and real clients need hosted validation. |
-| 3 | Employer/alias registry, individual protection, versioned policies, 15-minute previews, atomic cleanup execution, exactly 720-hour recovery, purge/tombstones/audit retention, pg_cron migration, bounded scheduled verifier. | Database logic and classifier/SSRF unit tests; actual scheduler and external employer network checks need deployment. |
-| 4 | Transactional audit triggers, immutable client IDs, owner labels/unknown actors, safe job snapshots, batches, search/filter/pagination, Feed and stable job links. | Database audit and mobile interaction tests. |
-| 5 | Server-filtered job cards, responsive navigation/dialogs, touch targets, mobile filters, edit/stage/protect/remove/undo/restore controls, Deleted deadlines, Feed/settings. | Chromium interactions at six widths; no real iOS device or Android device tested. |
-| 6 | Career-priority explanations, expanded role classification, review flags, deadlines/next actions/interviews/decisions, due-action badges, source/agent analytics and efficient full-tracker stats. | API/database tests and component interactions. |
-| 7 | Automated local checks, CI workflow, generated tool schemas, deployment/rollback/reconnection/monitoring instructions. | Local checks pass as recorded below; CI has not run remotely. |
+**User action:** reconnect each actual AI client and daily workflow using OAuth,
+confirm selected permissions, and refresh tool discovery. The old URL-token bridge
+expires **2026-10-31 00:00 UTC (October 30, 8 pm EDT)**. After owner reconnection,
+disable the bridge and remove/rotate its MCP secret. Owner consent/workflow
+changes were not performed or simulated.
 
-## Architecture
+## Implemented behavior
 
-The existing Next.js/Vercel app remains the frontend and backend. Browsers use
-Supabase Auth cookies and a same-origin `/api/tracker` route; existing extension
-routes retain their function with exact-origin CORS controls. MCP uses the
-official TypeScript SDK with the same Zod schemas and service. Native Supabase
-Auth owns authorization codes, PKCE, client registration, tokens and refresh.
-OAuth requests forward the user's access token to Supabase rather than an admin
-key. RLS, per-client grants, and database mutation guards enforce isolation and
-permissions even when a client calls REST directly.
+| Area | Result |
+|---|---|
+| Management | Shared validated schemas; paginated filters/search/sorting; get/stats/duplicate lookup; bulk ingestion/removal; Deleted/restore; confirmed administrative purge. |
+| OAuth | Native registration, consent, codes, PKCE and tokens. Signed client IDs, strict issuer/resource/expiry validation, granular grants and immediate resource revocation. OAuth uses user tokens, never an admin key. |
+| Cleanup | Versioned policies, protected companies/aliases/jobs, revision-bound 15-minute previews, atomic execution, exact 720-hour recovery and compact suppression tombstones. Application stages excluded from automation. |
+| Verification | Bounded scheduled checks of six exact authoritative ATS hosts; pinned public DNS/TLS, HTTPS/redirect/time/size limits. Blocked, timeout and weak evidence remain uncertain. |
+| Feed | Transactional audit, immutable client identity, owner labels, minimal snapshots, batch grouping, filtering, pagination and stable links. Historical actors are not invented. |
+| Web | Mobile cards, filters, details/notes, protection, stage controls, remove/undo/restore, Deleted deadline, Feed, settings, workflow dates and full-database analytics. |
+| Operations | Additive migrations, CI checks, generated MCP schemas, rollback guide, active retention cron and operator health command. |
 
-The database owns concurrency-sensitive operations: every mutation and audit
-event commits together; deletion and restoration lock rows; cleanup binds to
-row revisions and policy versions; ingestion serializes per owner. Permanent
-deletion is inaccessible through ordinary table grants. Cron performs bounded
-retention work; a secret-authenticated Vercel route verifies only allowlisted
-employer/ATS hosts. The verifier pins validated DNS addresses, rejects private
-networks and bounds redirects, body size and time. Transient failures stay
-uncertain. No AI identity is inferred from historical jobs or free text.
+The existing Next.js/Vercel/Supabase architecture remains. Browsers use Auth cookies
+and the same-origin API. MCP uses the official SDK and shared service/schemas.
+RLS, grants, mutation guards, row locks and revision checks protect direct REST
+and application requests. See [MCP.md](MCP.md) and [mcp-tools.json](mcp-tools.json).
 
-## Migration and retention
+## Original data preservation
 
-Four CLI migrations are provided under `supabase/migrations`. Existing jobs,
-application stages, dates, notes and user IDs survive. Legacy status aliases are
-mapped deliberately. Existing removed jobs with unknown deletion times get a
-new full recovery window. URL identifiers are backfilled without deleting
-duplicates. URL-only uniqueness is removed to preserve distinct requisitions;
-idempotency keys and serialized ingestion provide retry safety.
+A private export captured all jobs, original schema catalogs and setup state in
+`.tools/hosted/pre-upgrade-backup.json` (ignored by Git). SHA-256:
+`d63d14fa8cfa7712cc8d675816bf1db3d04e46b6f11c3527f8ccd17dee142638`.
+This is an application-data/catalog recovery export, not a provider-wide backup
+of Auth secrets or a claim of enabled PITR. Keep it private and copy it to your
+normal secure backup location.
 
-Full removed records remain recoverable for exactly 30 elapsed UTC days.
-Restoration then fails, and the next successful daily purge removes them. Only
-compact URL/requisition fingerprints survive for the configured suppression
-window (default 120 days). Feed snapshots contain company/title/status/reason
-and minimal lifecycle metadata, not notes, credentials, headers or entire job
-objects; they expire after 180 days and can be cleared by the owner. No events
-are backfilled under fabricated actors. See [deployment and recovery](DEPLOYMENT.md)
-for backup requirements, validation, schedule limits and rollback.
+The first four migrations were rehearsed against the linked database inside
+rolled-back transactions before CLI application. The fifth explicitly casts a
+JSON default to clear a lint warning, preserving function permissions/behavior.
+The old MCP service-role deployment received a guarded, audited compatibility
+path during cutover. Add a new migration for further SQL changes.
 
-## Validation
+Final comparison confirmed **1,130 original IDs and original field values**:
+owners, stages, notes, company/title, URLs, added/applied dates. Only `updated_at`
+was excluded because URL backfill deliberately refreshes it.
 
-Local checks include ESLint, TypeScript, the production Next.js build with
-nonsecret placeholder configuration, Node test suites using PGlite's actual
-PostgreSQL engine, real MCP SDK discovery and tool calls, and Playwright Chromium
-interaction tests. The database fixtures stub Supabase's `auth` functions and
-roles; they are not a hosted Supabase instance. PGlite tests omit the optional
-pgcrypto extension registration (modern PostgreSQL supplies `gen_random_uuid`).
-The pg_cron extension itself is not available in PGlite and must be verified
-on Supabase. The audience hook and service-only verification functions are
-executed by the database tests.
+| Status | Before and after |
+|---|---:|
+| Jobs Found | 1,069 |
+| Snoozed | 35 |
+| Deleted | 11 |
+| To Apply | 9 |
+| Applied | 4 |
+| Rejected | 2 |
 
-Final local result: **23 Node tests and 6 Playwright tests passed; lint,
-typecheck and production build passed.** Read-only inspection of the existing
-connected MCP also confirmed the stale enum and unpaginated 1,000-row response.
-That response is a subset and does not prove the total record count or status
-distribution of the complete production database.
+All 15 application-stage records remain intact. The 11 existing Deleted jobs had
+unknown removal times and received a fresh full 720 hours; earliest purge
+eligibility is `2026-11-22T04:22:37.136219Z`. No original job was removed,
+restored or purged during development. All temporary users, jobs and OAuth
+registrations were removed; one original Auth user remains.
 
-Coverage includes a 10,000-record tracker, a full 1,105-record tied-date cursor
-walk, search, original status mismatch, ingestion/duplicates, deletion/restore,
-protection permissions and company-rename guard, active-application safety,
-cleanup revision/policy invalidation and retry, UTC retention boundary,
-real table RLS/grants, revocation, audit attribution, token claim rejection,
-audience hook, legacy migration preservation, verification queue revision
-checks, and conservative posting/SSRF classification.
+## Verification results
 
-Browser tests interact with the actual components and CSS in an isolated harness
-at **320, 375, 390, 430, 768 and 1440 px**. The harness uses a simulated API and
-navigation adapters; database behavior is separately tested. It is not a claim
-of full hosted authenticated end-to-end coverage. Tests cover filter submission,
-details, protection, stage change, note edit/dialog, removal/undo, Deleted
-restore, Feed, navigation keyboard closing and horizontal overflow. Testing
-found and fixed an Escape/focus bug in the old mobile drawer. No simulator
-results are represented as real iOS Safari or Android Chrome testing.
+- **Local:** 24 Node and six Playwright tests pass; ESLint, TypeScript and Vercel
+  production build pass. Coverage includes 10,000 jobs, a complete 1,105-record
+  tied-date cursor walk, status compatibility, ingestion retries, audit, RLS/grants,
+  protection, policy/revision races, verification and exact retention boundaries.
+- **Hosted browser:** real sign-in, search/filter, details, notes, protection,
+  remove/undo, Deleted deadline/restore, owner stage change, Feed, settings and
+  analytics pass. Pages fit 320, 375, 390, 430, 768 and 1440 px; mobile navigation
+  closes with Escape. No uncaught JavaScript errors. No physical iOS/Android tests.
+- **Hosted OAuth:** public DCR, wrong-verifier rejection, real browser consent/303
+  redirect and code exchange, signed client/resource claims, PostgREST access,
+  refresh and native grant/refresh revocation pass. The actual consent response's
+  redirect code was exchanged directly; Chromium's synthetic localhost callback
+  navigation was not the proof. DCR is advertised; CIMD is not advertised.
+- **Hosted MCP:** real SDK discovery and synthetic add/get/update/remove/restore
+  pass on production; `dismissed` maps to Deleted. Read-only clients cannot remove;
+  revoked grants reject unexpired tokens. A second user cannot access the first
+  user's or original owner's jobs.
+- **Extension API:** the owner's exact installed origin passes preflights for
+  session/add/parse. Unlisted origins fail. With a signed-in synthetic browser,
+  session access and extension job insertion succeed under owner identity; bad
+  parse input is rejected before a model request. The installed Chrome popup
+  and a billable model parsing request were not automated.
+- **Concurrency:** two live connections overlap while holding row locks.
+  Restore-first makes a waiting purge reject the now-active synthetic job;
+  explicit-purge-first makes a waiting restore reject the missing synthetic job.
+  Scheduled expired eligibility is covered by database tests and guarded
+  zero-change hosted maintenance, not by expiring original jobs.
+- **Operations:** production DB lint has no warnings. Retention cron is active;
+  both direct and actual pg_cron execution of a guarded transaction removed/purged
+  zero jobs with no failed run. The one-off validation schedule was removed.
+  The regular daily run remains to be observed. Resource metadata/401 challenge
+  work; unauthenticated verification is 401. One read-only pinned ATS request
+  returned HTTP 200 and conservatively remained uncertain. The scheduled verifier
+  has not been manually run on original jobs.
 
-Remaining external checks are listed in [DEPLOYMENT.md](DEPLOYMENT.md): native
-PKCE sign-in, token exchange/refresh, deployed audience behavior, native client
-registration/CIMD availability, real ChatGPT/Claude reconnection, multi-connection
-Postgres restore/purge races, live cron runs, outbound verifier DNS/TLS behavior,
-production RLS/advisors, hosting firewall rules and alert delivery. Row locking
-and revision safeguards are implemented; simultaneous hosted connection tests
-remain necessary before enabling production cleanup.
+Security/performance advisors returned no errors. Remaining warnings: eight
+authenticated GraphQL-schema visibility notices for RLS-protected tables, two
+intentional authenticated SECURITY DEFINER RPCs with explicit identity/grant
+checks, and existing disabled leaked-password protection. This is not a clean
+security report. No anonymous/public table exposure warning returned. Provider
+firewall rules and paid Auth features were unchanged. Remote CI was not observed.
 
-## MCP and cleanup readiness
+## Scheduling, monitoring and cleanup readiness
 
-See [MCP.md](MCP.md) for every exposed tool, permission and result contract, and
-[mcp-tools.json](mcp-tools.json) for generated input schemas. The expanded role
-classifications are explicit; legacy values remain supported. No automatic
-scoring claims an employer's prestige or the user's competitiveness. Low-value
-internship cleanup requires a stored career-value explanation. Strategic
-companies and protected open jobs survive internship cleanup; an explicitly
-verified closure may permit removal under policy. The human owner retains
-intentional overrides. AI cleanup never modifies any existing application stage.
+Retention is active at **02:15 UTC daily**, bounded to 1,000 purges and 100 verified
+closures/run. Vercel verification is configured at **03:00 UTC** with a generated
+server-only secret and six exact ATS hosts. Full removed records expire after
+30 elapsed UTC days; physical purge follows a successful scheduled run.
+Tombstones default to 120 days, minimal audit/ingestion summaries to 180 days,
+maintenance logs to 90 days.
 
-**Do not yet prune the production 1,000+ records.** The local capability is in
-place; deployment, scheduler/monitoring and a real authorized MCP connection
-must be validated first. No production pruning was attempted. After those gates,
-agents may remove eligible records autonomously with recoverable deletion and
-bounded batches; no per-job manual approval is required.
+The installed unpacked Chrome extension origin is explicitly allowlisted:
+`chrome-extension://fbpbdbepncdjgofdginagebeggpkkpdk`. Arbitrary extension/site
+origins are rejected. Changing the installed extension ID requires updating this
+production configuration.
 
-Required next actions are limited to provider access/configuration, staging
-verification, deployment and the documented OAuth cutover. Legacy tokens must
-be revoked after that succeeds; their removal has intentionally not been faked.
+Run `node scripts/maintenance-health.mjs` in the authenticated CLI environment.
+It reports history/schedule/staleness, exits 1 for stale/failed/inactive maintenance
+and 2 for a query/response failure. Current health is green. Vercel cron failures
+are visible in deployment logs. **External alert delivery is not connected** to
+an email, webhook or monitoring account; no destination was supplied or invented.
+
+Do not launch broad production pruning yet. Complete actual owner AI-client
+OAuth reconnection, review protected companies/current policy preview, and observe
+the first scheduled runs. Ordinary authorized recoverable removals need no
+per-job approval. All application stages remain guarded from automated cleanup.
+
+Automatic approval review rejected broad environment download and unguarded
+maintenance. Approved alternatives used narrow per-variable access in memory
+and a locked transaction that aborts if any original row could be removed.
+No provider credentials were committed or logged.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for operations and recovery steps.
