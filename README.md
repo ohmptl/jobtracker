@@ -1,155 +1,50 @@
-# Job Tracker Web App
+﻿# Job Tracker
 
-A personal job application tracker with a small MCP server for ChatGPT.
+A Supabase-backed engineering opportunity tracker with a paginated web UI and
+MCP management API. This upgrade preserves the existing Next.js/Vercel stack.
 
-## Features
+- Jobs Found, Snoozed, Deleted and the existing application pipeline.
+- Recoverable deletion for exactly 30 days, protected companies/jobs and versioned cleanup.
+- Paginated search, bulk ingestion/removal, duplicate checks and database-side analytics.
+- Supabase-native OAuth consent and per-client permissions, with a staged legacy bridge.
+- Persistent activity Feed, source summaries and mobile job cards.
+- Daily retention and allowlisted, conservative posting verification.
 
-- **Authentication**: Secure sign up and login with Supabase Auth
-- **Dark Mode**: Toggle between light and dark themes
-- **Three Categories**: 
-  - To Apply: Jobs you're planning to apply to
-  - Applications: Jobs you've applied to and are in progress
-  - Rejections: Track rejected applications
-- **Search & Filter**: Search by company/position and filter by status
-- **Sorting**: Sort by date, company, or position
-- **Statistics Page**: Track your application metrics and insights
-- **Browser Extension**: Quickly add jobs while browsing (Chrome)
-- **AI Jobs Found**: Review new roles in a feed, snooze them, or retain removed roles for deduplication
-- **MCP Server**: Let ChatGPT list, add, and update jobs directly
-- **AI Parsing**: Optional server-side Gemini parsing for the browser extension
-- **Responsive Sidebar**: Unified navigation across applications, research, statistics, and settings
+## Status and documentation
 
-## Setup Instructions
+Implemented and locally tested; **not deployed or production-verified**. OAuth
+cutover requires authenticated Supabase/Vercel access and a real client sign-in.
 
-### 1. Database Setup
+- [Implementation and validation report](docs/DELIVERY.md)
+- [Deployment, OAuth setup, reconnection and rollback](docs/DEPLOYMENT.md)
+- [MCP tools and contracts](docs/MCP.md)
+- [Generated input schemas](docs/mcp-tools.json)
+- [Implementation checklist and decisions](docs/IMPLEMENTATION.md)
 
-Run `scripts/000_master_setup.sql` in the Supabase SQL editor.
+## Local development
 
-The first successful schema-v2 run deletes old Job Tracker data and obsolete application tables, then creates the current schema. Your Supabase Auth user is preserved. A persistent migration marker makes later runs non-destructive: rerunning the same script only adds missing schema and refreshes indexes, policies, and triggers.
+Use Node 24 and the pinned pnpm version. Copy `.env.example` to `.env.local` and
+configure your test Supabase project and `APP_URL=http://localhost:3000`.
 
-### 2. Environment Variables
-
-The following environment variables need to be configured in your project:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only, used by MCP)
-- `MCP_USER_ID` (your Supabase Auth user UUID)
-- `MCP_SECRET` (a random secret of at least 32 characters)
-- `GEMINI_API_KEY` (server-only, optional, enables extension AI parsing)
-- `GEMINI_MODEL` (optional, defaults to `gemini-3.6-flash`)
-
-Copy `.env.example` to `.env.local` and fill in the values. Never expose the service-role or Gemini keys through `NEXT_PUBLIC_` variables.
-
-### 3. ChatGPT MCP Connection
-
-1. Deploy the application to a public HTTPS URL.
-2. Open **MCP connection** in the dashboard and copy the private MCP URL.
-3. In ChatGPT, enable developer mode and create an MCP connection using that URL.
-4. Confirm that ChatGPT discovers `list_jobs`, `add_job_found`, and `update_job`.
-5. Test your research prompt manually, then schedule it in ChatGPT with the MCP connection enabled.
-
-The application stores no research filters, agent prompts, or schedules. Those remain in ChatGPT. The private URL is a single-user capability URL; rotate `MCP_SECRET` to revoke it. For a shared or public application, replace this with OAuth 2.1.
-
-The endpoint implements MCP Streamable HTTP through the official TypeScript SDK. Test it locally with MCP Inspector using `http://localhost:3000/mcp/<your-secret>`.
-
-### 4. Browser Extension Setup
-
-To use the Chrome extension:
-
-1. Download the extension folder from your project
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the `extension` folder
-5. The extension icon will appear in your toolbar
-6. Click the icon to add jobs while browsing job sites
-
-The extension will auto-detect job information from common job boards and allow you to quickly add them to your tracker.
-
-## Usage
-
-### Main Dashboard
-
-- **Add Job**: Click the "Add Job" button to manually add a new job application
-- **Search**: Use the search bar to find specific companies or positions
-- **Filter**: Filter by application status
-- **Sort**: Sort by date (newest first), company name, or position
-
-### Job Actions
-
-Right-click or click the menu button on any job to:
-- Open the job posting URL
-- Edit job details
-- Change application status
-- Delete the job
-
-### AI Jobs Found
-
-- **New**: Review one expanded job at a time, then move it to Apply, Snooze, or Remove it
-- **Snoozed**: Review postponed jobs in the same feed layout and return them to New when ready
-- **Deleted**: Retains removed jobs in a condensed list so ChatGPT can avoid suggesting them again
-
-### Statistics
-
-Click "Statistics" in the header to view:
-- Total applications and conversion rates
-- Success and rejection rates
-- Application frequency insights
-- Top companies you've applied to
-- Visual status breakdown
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Styling**: Tailwind CSS v4
-- **UI Components**: shadcn/ui
-- **Deployment**: Vercel
-
-## Project Structure
-
-```
-├── app/
-│   ├── auth/              # Authentication pages
-│   ├── dashboard/         # Main dashboard and statistics
-│   ├── api/               # Internal routes used by the browser extension
-│   └── mcp/               # ChatGPT MCP endpoint
-├── components/           # React components
-│   ├── ui/              # shadcn/ui components
-│   ├── jobs-table.tsx   # Main jobs table with filtering
-│   ├── add-job-dialog.tsx
-│   ├── edit-job-dialog.tsx
-│   ├── theme-toggle.tsx
-│   └── logout-button.tsx
-├── lib/
-│   └── supabase/        # Supabase client configuration
-├── scripts/             # Database migration scripts
-└── extension/           # Chrome browser extension
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm check
+pnpm exec playwright install chromium
+pnpm test:mobile
+pnpm build
 ```
 
-## Browser Extension Features
+The SQL/permission tests use synthetic data in an isolated PostgreSQL engine.
+Browser tests use the actual components in a fixture harness with a simulated
+API; hosted OAuth and full authenticated end-to-end checks remain separate.
 
-The extension includes:
-- AI-assisted normalization through a server-side Gemini integration
-- Privacy-scoped extraction of JobPosting JSON-LD and known description elements
-- Quick add button with pre-filled information
-- Manual entry option for any job posting
-- Direct integration with your job tracker
+Apply `supabase/migrations` with the authenticated Supabase CLI after backing up
+and rehearsing on a test project. **Do not run `scripts/000_master_setup.sql`
+against an existing database**: it is a historical setup script with a data reset.
+Never expose service-role keys or provider credentials through `NEXT_PUBLIC_`.
 
-Supported job sites with auto-detection:
-- LinkedIn
-- Indeed
-- Glassdoor
-- And more (extensible)
-
-## Tips for Best Results
-
-1. **Regular Updates**: Update job statuses as they change
-2. **Add Notes**: Include interview dates, contact names, and other relevant info
-3. **Review Statistics**: Check your stats weekly to stay motivated and adjust your strategy
-4. **Use the Extension**: Add jobs as you find them to build your pipeline
-
-## Support
-
-For issues or questions, please refer to the Vercel support at vercel.com/help.
+The Chrome extension still lives in `extension/`. Load it unpacked in Chrome,
+set its deployed app URL, and configure its exact origin in
+`EXTENSION_ALLOWED_ORIGINS`. Existing scheduled searches remain in the AI client;
+reconnect them only after validating OAuth and the new discovery schema.
