@@ -1,18 +1,20 @@
 ﻿# Job Tracker
 
-A Supabase-backed engineering opportunity tracker with a paginated web UI and
+A Supabase-backed engineering opportunity tracker with a grouped application collection and
 MCP management API. This upgrade preserves the existing Next.js/Vercel stack.
 
 - Jobs Found, Snoozed, Deleted and the existing application pipeline.
 - Recoverable deletion for exactly 30 days, protected companies/jobs and versioned cleanup.
 - Paginated search, bulk ingestion/removal, duplicate checks and database-side analytics.
 - Supabase-native OAuth consent and per-client permissions.
-- Dense application rows, a single-job approval queue, Feed and source summaries.
+- One complete application collection grouped into To Apply, Applied and Rejected.
+- Automatic search across all job fields, clickable rows and readable job cards.
+- A single-job approval queue, Feed and source summaries.
 - Daily retention and allowlisted, conservative posting verification.
 
 ## Status and documentation
 
-Live at **https://job.ohmptl.com**. Six additive migrations are applied; all
+Live at **https://job.ohmptl.com**. Seven additive migrations are applied; all
 1,130 original jobs are preserved. Hosted browser, native OAuth/PKCE, SDK MCP,
 revocation, isolation and concurrent restore/purge checks passed with synthetic
 fixtures. Reconnect AI clients to `https://job.ohmptl.com/mcp` using OAuth.

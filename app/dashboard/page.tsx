@@ -2,19 +2,14 @@
 import { execute } from "@/lib/tracker/service";
 import { JobBrowser } from "@/components/job-browser";
 import { AddJobDialog } from "@/components/add-job-dialog";
+import { applicationStatuses, collectJobPages } from "@/lib/tracker/collection";
 export default async function DashboardPage() {
   const db = await createClient();
-  const page = await execute({ db }, "list_jobs", {
-    statuses: [
-      "to_apply",
-      "applied",
-      "interviewing",
-      "offered",
-      "rejected",
-      "accepted",
-    ],
-    page_size: 30,
-  });
+  const page = await collectJobPages(cursor => execute({ db }, "list_jobs", {
+    statuses: applicationStatuses,
+    page_size: 100,
+    ...(cursor ? { cursor } : {}),
+  }));
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">

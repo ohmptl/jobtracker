@@ -75,9 +75,23 @@ before(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202610230006_retire_legacy_mcp.sql", "utf8"),
   );
+  await db.exec(readFileSync("supabase/migrations/202610230007_search_all_job_fields.sql", "utf8"));
   await identity();
 });
 after(async () => db.close());
+
+test("live search finds partial company names and all job fields without wildcard expansion", async () => {
+  const job = await add("Lunaris Electronics", "Microwave Engineer", { notes: "Zeta resonator design", salary: "$127,890", source: "CampusConnector", requisition_id: "REQ-MW-447", role_type: "new_grad", posted_date: "2027-02-17" });
+  for (const q of ["Lunari", "resonat", "$127,890", "CampusCon", "MW-447", "2027-02-17", "new grad", "lunari resonat"]) {
+    const result = await api("list_jobs", { q });
+    assert(result.jobs.some((j: { id: string }) => j.id === job.id), q);
+  }
+  assert.equal((await api("list_jobs", { q: "Lunari missingphrase" })).total, 0);
+  assert.equal((await api("list_jobs", { q: "%" })).total, 0);
+  await identity(other);
+  assert.equal((await api("list_jobs", { q: "resonat" })).total, 0);
+  await identity();
+});
 
 test("legacy retirement drops the bridge and grants and rejects unidentified service writes", async () => {
   const removed = await db.query<{ rpc: string | null; grants: number }>(`select

@@ -1,6 +1,6 @@
 # Deployment, OAuth cutover and recovery
 
-**Production is live at https://job.ohmptl.com** as of 2026-10-23. Six migrations,
+**Production is live at https://job.ohmptl.com** as of 2026-10-23. Seven migrations,
 native OAuth/PKCE/DCR, resource-audience claims, actual browser consent, SDK MCP,
 refresh/revocation, isolation and concurrent restore/purge passed with synthetic
 fixtures. All 1,130 original jobs remain intact. See [DELIVERY.md](DELIVERY.md)
@@ -82,10 +82,11 @@ pnpm exec supabase db advisors --linked
 ```
 
 Review migration history before pushing; resolve history drift explicitly.
-The six migrations add the model/RPCs, register daily pg_cron maintenance,
+The seven migrations add the model/RPCs, register daily pg_cron maintenance,
 provide the access-token hook, add service-only verification RPCs, and make a
 JSON default cast explicit without changing the dispatcher's grants or behavior,
-and retire the temporary MCP token bridge without deleting jobs or audit history.
+retire the temporary MCP token bridge, and extend partial search to all user-facing
+job fields without deleting jobs or audit history.
 No application tables are dropped. The old URL-only unique index becomes a
 nonunique index because distinct requisitions may share a landing URL.
 Legacy `dismissed` rows, if present, become `jobs_deleted`. Existing Deleted

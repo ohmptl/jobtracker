@@ -116,12 +116,11 @@ export function EditJobDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Job</DialogTitle>
           <DialogDescription>
-            Update job application details. Added Date is preserved
-            automatically.
+            {job.position} at {job.company}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -245,6 +244,9 @@ export function EditJobDialog({
               defaultValue={job.notes || ""}
             />
           </div>
+          <details className="rounded-lg border p-3">
+            <summary className="cursor-pointer text-sm font-medium">Evaluation, source & workflow dates</summary>
+            <div className="mt-3 space-y-4">
           <label>
             Career priority
             <select name="priority" defaultValue={job.priority || "review"}>
@@ -352,12 +354,14 @@ export function EditJobDialog({
               </label>
             ))}
           </fieldset>
+            </div>
+          </details>
           {message && (
             <p role="alert" className="text-destructive">
               {message}
             </p>
           )}
-          <div className="flex justify-end gap-3">
+          <div className="sticky -bottom-6 flex justify-end gap-3 border-t bg-background py-3">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

@@ -4,7 +4,7 @@
 
 **Live: https://job.ohmptl.com. OAuth MCP: https://job.ohmptl.com/mcp.**
 The production build is promoted to the existing custom domain. Supabase project
-`cpwcusyinnsstcirxaom` has six migrations applied. Older token-bearing deployment
+`cpwcusyinnsstcirxaom` has seven migrations applied. Older token-bearing deployment
 snapshots were removed; use the current OAuth-only artifact for rollback.
 Native OAuth, S256 PKCE, public-client dynamic registration, the resource-audience
 hook and refresh/revocation work. No signing keys or account credentials rotated.
@@ -28,7 +28,7 @@ consent/workflow changes were not performed or simulated.
 | Cleanup | Versioned policies, protected companies/aliases/jobs, revision-bound 15-minute previews, atomic execution, exact 720-hour recovery and compact suppression tombstones. Application stages excluded from automation. |
 | Verification | Bounded scheduled checks of six exact authoritative ATS hosts; pinned public DNS/TLS, HTTPS/redirect/time/size limits. Blocked, timeout and weak evidence remain uncertain. |
 | Feed | Transactional audit, immutable client identity, owner labels, minimal snapshots, batch grouping, filtering, pagination and stable links. Historical actors are not invented. |
-| Web | Dense application rows; single-job approval with Coming up queue; New/Snoozed feeds; details/notes, stage controls, remove/undo/restore, Deleted deadlines, Feed and analytics. Settings contains only connections and activity privacy. |
+| Web | One full application collection in To Apply/Applied/Rejected groups, one-click Applied, automatic full-field search, clickable rows/read-only cards, separate editing; single-job approval with Coming up queue; New/Snoozed feeds; Deleted recovery, Feed and analytics. Settings contains only connections and activity privacy. |
 | Operations | Additive migrations, CI checks, generated MCP schemas, rollback guide, active retention cron and operator health command. |
 
 The existing Next.js/Vercel/Supabase architecture remains. Browsers use Auth cookies
@@ -53,6 +53,17 @@ path during cutover. Add a new migration for further SQL changes.
 Migration six removes that compatibility path and the service-only bridge; audit
 history is retained. Employer/policy forms are removed from Settings; backend
 protection and retention safeguards continue to enforce lifecycle rules.
+Migration seven replaces whole-word search with literal case-insensitive partial
+matches across user-facing job fields (including company, notes, salary, source
+and dates). Multiple terms can match different fields. IDs and internal search/
+audit bookkeeping are excluded. No job rows or timestamps are rewritten.
+
+Applications follows bounded 100-row API cursors to collect every matching job,
+then renders one collection without page controls. Research and Deleted retain
+bounded pages. Search is automatic after a 250ms typing pause; obsolete requests
+are aborted and their results ignored. Row actions do not trigger card opening;
+Enter/Space opens a focused row. Cards prioritize stage actions, posting, notes
+and upcoming dates, with secondary metadata and edit fields collapsed.
 
 Final comparison confirmed **1,130 original IDs and original field values**:
 owners, stages, notes, company/title, URLs, added/applied dates. Only `updated_at`
@@ -75,7 +86,7 @@ registrations were removed; one original Auth user remains.
 
 ## Verification results
 
-- **Local:** 24 Node and 12 Playwright tests pass; ESLint, TypeScript and Vercel
+- **Local:** 27 Node and 15 Playwright tests pass; ESLint, TypeScript and Vercel
   production build pass. Coverage includes 10,000 jobs, a complete 1,105-record
   tied-date cursor walk, status compatibility, ingestion retries, audit, RLS/grants,
   protection, policy/revision races, verification and exact retention boundaries.
@@ -83,10 +94,15 @@ registrations were removed; one original Auth user remains.
   remove/undo, Deleted deadline/restore, owner stage change, Feed, settings and
   analytics pass. Pages fit 320, 375, 390, 430, 768 and 1440 px; mobile navigation
   closes with Escape. No uncaught JavaScript errors. No physical iOS/Android tests.
-  The revised application table was verified with 14 synthetic rows at 41px each,
+  The compact application table was verified with synthetic rows,
   real stage/note edits and guarded remove/undo. Review approval advances the
   featured job, Snooze/New switches correctly, and Deleted restores correctly.
   Table/review/settings fit all six widths. Old token URLs return 404.
+  The grouped collection was subsequently verified with 135 synthetic applications
+  spanning multiple API cursor pages. Live typing matched company fragments,
+  notes, salary, source and combined terms without Enter. Applied shortcuts set
+  dates and moved rows between groups. Mouse/keyboard row opening, separate note
+  editing, shared review cards and final opaque mobile/desktop card layouts passed.
 - **Hosted OAuth:** public DCR, wrong-verifier rejection, real browser consent/303
   redirect and code exchange, signed client/resource claims, PostgREST access,
   refresh and native grant/refresh revocation pass. The actual consent response's

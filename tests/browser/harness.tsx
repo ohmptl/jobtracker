@@ -68,7 +68,7 @@ function Harness() {
             {tab === "jobs" && (
               <JobBrowser key="jobs" initialPage={initialPage} />
             )}
-            {tab === "applications" && <JobBrowser key="applications" initialPage={{ ...initialPage, jobs: [{ ...job, status: "to_apply" }] }} view="applications" />}
+            {tab === "applications" && <JobBrowser key="applications" initialPage={{ ...initialPage, total: 3, jobs: [{ ...job, status: "to_apply" }, { ...job, id: "22222222-2222-4222-8222-222222222222", position: "Applied Hardware Role", status: "applied", applied_date: "2026-10-22T12:00:00Z" }, { ...job, id: "33333333-3333-4333-8333-333333333333", position: "Rejected Hardware Role", status: "rejected" }] }} view="applications" />}
             {tab === "deleted" && (
               <JobBrowser
                 key="deleted"

@@ -65,7 +65,7 @@ high-value technical domains, even if they were marked low. Domain edits bump
 the policy version and invalidate outstanding previews. Evidence-backed closed
 roles follow the separate expiration rule.
 
-Listing filters include company, title, full-text `q`, role type, location,
+Listing filters include company, title, case-insensitive partial-match `q`, role type, location,
 priority, effective protection, availability, source, added date bounds,
 posted date bounds and `verified_before` (including never verified).
 Sorts are newest first, company A–Z, and position A–Z; each cursor includes

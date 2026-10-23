@@ -17,7 +17,8 @@ Milestones (updated as work is verified):
 - [x] Shared paginated management API and MCP schemas, compatibility alias.
 - [x] Supabase OAuth resource server, consent, client grants and revocation code.
 - [x] Versioned cleanup, protected employers, verification and maintenance code.
-- [x] Feed, dense application table, single-job review queue, filtering and analytics.
+- [x] Feed, complete grouped application collection, single-job review queue and analytics.
+- [x] Automatic full-field search, Applied shortcuts, row cards and separate editing.
 - [x] Automated database/API/UI checks, deployment and recovery guide.
 - [x] Hosted migration rehearsal, active pg_cron and production deployment.
 - [x] Native OAuth setup, audience validation, browser consent, SDK refresh/revocation.
@@ -53,7 +54,7 @@ Milestones (updated as work is verified):
 No `.env.local`, Supabase access token, linked project, Vercel credentials,
 Node, pnpm, Docker or Supabase CLI was initially present. Local tooling was
 installed for checks. Authenticated WSL access later supplied Node 24.21.0,
-pnpm 12.15.0, Supabase CLI 2.121.0 and Vercel CLI 65.2.0. Six migrations are
+pnpm 12.15.0, Supabase CLI 2.121.0 and Vercel CLI 65.2.0. Seven migrations are
 applied and production deployed. All original job fields except intentionally
 refreshed `updated_at` remain unchanged. No original job was removed or purged.
 
@@ -72,7 +73,7 @@ against the production OAuth endpoint with a real SDK client. Hosted synthetic
 tests verified native PKCE, resource claims, refresh/revocation, browser consent,
 two-user isolation, responsive workflows and concurrent restore/purge. Final
 count is 1,130, with all 15 application-stage jobs preserved and no synthetic
-users left. All 24 Node and 12 component browser tests pass, along with lint,
+users left. All 27 Node and 15 component browser tests pass, along with lint,
 typecheck, the actual Vercel production build and hosted database lint.
 See `DELIVERY.md` for limitations and `DEPLOYMENT.md` for remaining owner steps.
 
