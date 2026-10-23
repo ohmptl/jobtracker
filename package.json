@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:mobile": "playwright test",
+    "test:hosted-oauth": "node scripts/verify-hosted-oauth.mjs",
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {

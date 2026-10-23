@@ -1,8 +1,17 @@
 # MCP management contract
 
-Version: `personal-job-tracker` 3.0.0; compatible SDK 1.32.1. Canonical endpoint:
+Version: `personal-job-tracker` 3.0.1; compatible SDK 1.32.1. Canonical endpoint:
 `APP_URL/mcp`, stateless Streamable HTTP, JSON responses, OAuth authentication.
 No agent-supplied actor name grants identity or permission.
+
+POST handles initialize, notifications and tool requests using a fresh server
+per request, without an MCP session ID. Authenticated GET and DELETE return 405
+with `Allow: POST`: this deployment does not offer standalone SSE or persistent
+sessions. Responses include `X-Request-Id` and `X-Job-Tracker-Version`; safe
+structured logs distinguish authentication, grant checks and transport errors.
+
+See [OAUTH-INCIDENT.md](OAUTH-INCIDENT.md) for the October 23 OIDC signing failure,
+production verification and the opt-in synthetic regression command.
 
 Production endpoint: **https://job.ohmptl.com/mcp**. Native Supabase DCR/S256,
 resource-bound access tokens, refresh and revocation passed hosted validation.

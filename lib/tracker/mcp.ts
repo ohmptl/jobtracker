@@ -4,6 +4,7 @@ import { toolSchemas, type Operation } from "./schemas";
 import { execute, type TrackerContext } from "./service";
 import { z } from "zod";
 import { boundedRequest } from "./security";
+import { INTEGRATION_VERSION } from "./integration-diagnostics";
 
 export const descriptions: Partial<Record<Operation, string>> = {
   list_jobs:
@@ -55,7 +56,7 @@ const readOnly = new Set<Operation>([
 ]);
 export function createTrackerServer(ctx: TrackerContext) {
   const server = new McpServer(
-    { name: "personal-job-tracker", version: "3.0.0" },
+    { name: "personal-job-tracker", version: INTEGRATION_VERSION },
     {
       instructions:
         "Use find_existing_job before ingestion. Listings are paginated. Authorized cleanup is recoverable for 30 days. Preserve strategic employers, specialized hardware roles and all application-stage records. Never infer closed from a block or timeout. Actor names in job input are not identity evidence.",
@@ -103,6 +104,11 @@ export function createTrackerServer(ctx: TrackerContext) {
   return server;
 }
 export async function serveMcp(request: Request, ctx: TrackerContext) {
+  // This server has no persistent sessions or server-to-client messages. A GET
+  // stream would be closed as soon as this serverless request finishes. Decline
+  // it explicitly so clients do not mistake an empty SSE stream for a session.
+  if (request.method !== "POST")
+    return new Response(null, { status: 405, headers: { Allow: "POST" } });
   try {
     request = await boundedRequest(request);
   } catch {
@@ -113,9 +119,11 @@ export async function serveMcp(request: Request, ctx: TrackerContext) {
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
-  await server.connect(transport);
-  const response = await transport.handleRequest(request);
-  // JSON responses are fully materialized by the stateless transport.
-  await server.close();
-  return response;
+  try {
+    await server.connect(transport);
+    // JSON responses are fully materialized by the stateless transport.
+    return await transport.handleRequest(request);
+  } finally {
+    await server.close();
+  }
 }

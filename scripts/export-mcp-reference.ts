@@ -2,6 +2,7 @@ import { writeFileSync } from "node:fs";
 import { z } from "zod";
 import { toolSchemas, type Operation } from "../lib/tracker/schemas";
 import { descriptions } from "../lib/tracker/mcp";
+import { INTEGRATION_VERSION } from "../lib/tracker/integration-diagnostics";
 const ownerOnly = new Set([
   "save_policy",
   "save_company",
@@ -19,5 +20,5 @@ const tools = Object.entries(toolSchemas)
   }));
 writeFileSync(
   "docs/mcp-tools.json",
-  JSON.stringify({ version: "3.0.0", tools }, null, 2) + "\n",
+  JSON.stringify({ version: INTEGRATION_VERSION, tools }, null, 2) + "\n",
 );

@@ -181,6 +181,15 @@ authorization path to `/oauth/consent`. Require authorization code with PKCE
 S256. Configure asymmetric signing keys according to Supabase's rotation process.
 Never replace existing signing keys without checking active session impact.
 
+**OIDC deployment gate:** ChatGPT requests `openid email profile` when advertised.
+An `offline_access`-only smoke test is insufficient: Supabase cannot sign ID
+tokens with HS256 and returns HTTP 500 during the code exchange. Confirm a new
+session uses ES256/RS256 and run the full browser/code-exchange regression in
+[OAUTH-INCIDENT.md](OAUTH-INCIDENT.md), including signature verification and
+UserInfo. Migrate the legacy secret into signing keys, rotate to an asymmetric
+standby key, and retain the previous key's trust; do not revoke legacy keys as
+part of this fix. Existing API keys and sessions must continue to work.
+
 Set the resource configuration using a reviewed local SQL file and CLI:
 
 ```sql
