@@ -1,14 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { extensionCors } from '@/lib/tracker/cors'
 
 function corsHeaders(request: Request) {
-  const origin = request.headers.get("origin")
-  return {
-    "Access-Control-Allow-Origin": origin || "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-  }
+  return extensionCors(request)||{}
 }
 
 export async function OPTIONS(request: Request) {
@@ -20,6 +15,7 @@ export async function OPTIONS(request: Request) {
 
 // Endpoint for browser extension to check if user is logged in
 export async function GET(request: Request) {
+  if(!extensionCors(request)) return new NextResponse('Origin not allowed',{status:403})
   try {
     const supabase = await createClient()
 

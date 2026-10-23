@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { extensionCors } from '@/lib/tracker/cors'
+import { canonicalizeUrl, safeUrl } from '@/lib/tracker/schemas'
 
 const jobSchema = z.object({
   company: z.string().trim().max(200).optional(),
   position: z.string().trim().max(300).optional(),
-  url: z.string().url().max(2000).nullable().optional(),
+  url: safeUrl.nullable().optional(),
   location: z.string().trim().max(300).nullable().optional(),
   role_type: z.enum(["internship", "full_time"]).default("full_time"),
   salary: z.string().trim().max(200).nullable().optional(),
@@ -14,6 +16,7 @@ const jobSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  if(!extensionCors(request)) return new NextResponse('Origin not allowed',{status:403})
   try {
     const supabase = await createClient()
 
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
         position: finalPosition,
         status: "to_apply",
         url: url || null,
+        canonical_url:url?canonicalizeUrl(url):null,
         location: location || null,
         role_type,
         salary: salary || null,
@@ -64,13 +68,7 @@ export async function POST(request: Request) {
 }
 
 function corsHeaders(request: Request) {
-  const origin = request.headers.get("origin")
-  return {
-    "Access-Control-Allow-Origin": origin || "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-  }
+  return extensionCors(request)||{}
 }
 
 // Allow OPTIONS for CORS preflight

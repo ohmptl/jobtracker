@@ -18,3 +18,7 @@
 next-env.d.ts
 .DS_Store
 Thumbs.db
+.tools/
+test-results/
+playwright-report/
+supabase/.temp/

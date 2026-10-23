@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/mcp/")) return NextResponse.next()
+  if (request.nextUrl.pathname === "/mcp" || request.nextUrl.pathname.startsWith("/mcp/") || request.nextUrl.pathname.startsWith("/.well-known/")) return NextResponse.next()
   return await updateSession(request)
 }
 

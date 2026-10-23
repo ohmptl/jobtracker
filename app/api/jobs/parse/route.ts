@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
+import { extensionCors } from '@/lib/tracker/cors'
 
 const requestSchema = z.object({
   url: z.url().max(2000),
@@ -27,6 +28,7 @@ const parsedJobSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  if(!extensionCors(request)) return new NextResponse('Origin not allowed',{status:403})
   const supabase = await createClient()
   const { data } = await supabase.auth.getUser()
   if (!data.user) return json(request, { error: "Unauthorized" }, 401)
@@ -118,10 +120,5 @@ function json(request: Request, body: unknown, status: number) {
 }
 
 function corsHeaders(request: Request) {
-  return {
-    "Access-Control-Allow-Origin": request.headers.get("origin") || "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Credentials": "true",
-  }
+  return extensionCors(request)||{}
 }

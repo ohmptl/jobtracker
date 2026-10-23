@@ -29,7 +29,8 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
-      router.push("/dashboard")
+      const next = new URLSearchParams(window.location.search).get('next')
+      router.push(next?.startsWith('/oauth/consent?') ? next : '/dashboard')
       router.refresh()
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
