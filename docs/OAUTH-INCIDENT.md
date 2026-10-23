@@ -116,10 +116,15 @@ callback through DCR; that is expected.
 | Isolation and cleanup | Two-user isolation passes; all synthetic users, jobs and registrations removed |
 | Genuine data | 1,130 jobs, 15 application-stage jobs preserved; RLS enabled |
 | Local checks | Lint, typecheck, build; 30 Node/database tests; 15 browser tests pass |
-| ChatGPT account linking/invocation | Awaiting real reconnect from the newer app instance |
+| ChatGPT account linking/invocation | Passed: user confirmed the newer instance connected and both `get_job_stats` and `list_jobs` work |
 
 The standards-compliant SDK and browser tests prove the hosted backend path.
-They do not establish ChatGPT installation/account-linking success.
+Separately, the user completed the real ChatGPT reconnect for
+`asdk_app_6adbaa0714e88191b4c8c736eafe893a` and reported: "Connected; both tools
+work." This externally confirms account linking and the requested read-only
+invocations. No remaining production-use blocker was reported. The original
+instance's historical session-termination cause remains unproven; verification
+of that obsolete duplicate is not required for the working newer connection.
 
 ## Repeatable hosted regression
 
