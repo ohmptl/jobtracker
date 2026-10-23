@@ -124,3 +124,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer base {
+  main { min-width: 0; }
+  select { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--background); padding: 0.5rem; color: var(--foreground); }
+  input:not([type="checkbox"]), textarea { font-size: 16px; }
+  label { display: block; }
+  button, [role="button"], [data-slot="select-trigger"] { min-height: 44px; }
+  summary { overflow-wrap: anywhere; }
+  [data-slot="dialog-content"] { max-height: 90dvh; overflow-y: auto; }
+  @media (max-width: 767px) {
+    main { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    [data-slot="dialog-content"] { padding: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+}

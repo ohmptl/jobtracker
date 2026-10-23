@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createClient } from "@/lib/supabase/client"
+import { tracker } from '@/lib/tracker/browser'
 import { EditJobDialog, type EditableJob } from "./edit-job-dialog"
 
 type Job = EditableJob
@@ -44,8 +45,8 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
   }, [supabase, router])
 
   async function deleteJob(id: string) {
-    const { error } = await supabase.from("jobs").delete().eq("id", id)
-    if (!error) router.refresh()
+    await tracker('remove_job',{id,reason:'Owner removed from applications',override_protection:true})
+    router.refresh()
   }
 
   async function updateStatus(id: string, status: string) {
@@ -97,7 +98,7 @@ export function JobsTable({ initialJobs: jobs }: { initialJobs: Job[] }) {
               <DropdownMenuItem onClick={() => setEditingJob(job)}>Edit</DropdownMenuItem>
               <DropdownMenuSeparator /><DropdownMenuLabel>Change status</DropdownMenuLabel>
               {APP_STATUSES.filter((status) => status !== job.status).map((status) => <DropdownMenuItem key={status} onClick={() => updateStatus(job.id, status)}>{STATUS_LABELS[status]}</DropdownMenuItem>)}
-              <DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => deleteJob(job.id)}>Delete permanently</DropdownMenuItem>
+              <DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => deleteJob(job.id)}>Move to Deleted</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
