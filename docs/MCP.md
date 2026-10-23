@@ -1,15 +1,14 @@
 # MCP management contract
 
 Version: `personal-job-tracker` 3.0.0; compatible SDK 1.32.1. Canonical endpoint:
-`APP_URL/mcp`, stateless Streamable HTTP, JSON responses. The temporary
-`/mcp/<secret>` bridge shares the same tools and retires via environment settings.
+`APP_URL/mcp`, stateless Streamable HTTP, JSON responses, OAuth authentication.
 No agent-supplied actor name grants identity or permission.
 
 Production endpoint: **https://job.ohmptl.com/mcp**. Native Supabase DCR/S256,
 resource-bound access tokens, refresh and revocation passed hosted validation.
-Reconnect actual AI clients and refresh their discovery cache. The legacy bridge
-expires **2026-10-31 00:00 UTC**; owner reconnection and secret retirement remain
-manual cutover steps. See [DELIVERY.md](DELIVERY.md) for verified boundaries.
+Reconnect actual AI clients and refresh their discovery cache. Legacy URL-token
+access is removed, including its database RPC and grants; old token URLs return
+404. See [DELIVERY.md](DELIVERY.md) for verified boundaries.
 
 The installed SDK negotiates protocol revisions through `2025-11-25`; this
 implementation does not advertise support for a newer revision the SDK cannot

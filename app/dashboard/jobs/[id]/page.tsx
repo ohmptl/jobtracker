@@ -22,6 +22,7 @@ export default async function JobPage({
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold">Opportunity details</h1>
       <JobBrowser
+        detail
         initialPage={{
           jobs: [job],
           total: 1,

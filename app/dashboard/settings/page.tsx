@@ -11,25 +11,18 @@ export default async function SettingsPage() {
     ? new URL("/mcp", process.env.APP_URL).toString()
     : null;
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">Settings & connections</h1>
-      <section className="space-y-3 rounded-xl border bg-card p-5">
-        <h2 className="text-xl font-semibold">MCP connection</h2>
+    <div className="max-w-4xl space-y-4">
+      <h1 className="text-2xl font-semibold">Settings & connections</h1>
+      <section className="space-y-2 rounded-lg border bg-card p-4">
+        <h2 className="text-lg font-semibold">Connect an AI client</h2>
         <p>
           OAuth endpoint:{" "}
           <code className="break-all">{oauthUrl || "Configure APP_URL"}</code>
         </p>
-        <p>
-          {process.env.MCP_OAUTH_ENABLED === "true"
-            ? "OAuth resource server enabled; client connection must still be verified."
-            : "OAuth is awaiting provider configuration and verification. The existing connection remains available during migration."}
-        </p>
         <p className="text-sm text-muted-foreground">
-          Connect using OAuth in your AI client and sign in with your tracker
-          account. Review the client ID, return address and permissions at
-          consent. Revoke clients below. Legacy private URLs are no longer
-          displayed; existing connections continue until the configured cutover
-          deadline.
+          Use this URL with OAuth and sign in to your tracker account. Tell your
+          agent your job preferences in conversation. Manage connected clients
+          below.
         </p>
       </section>
       <TrackerSettings initialSettings={settings} />

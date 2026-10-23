@@ -137,6 +137,11 @@
     main { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
     [data-slot="dialog-content"] { padding: 1rem; }
   }
+  @media (min-width: 768px) and (pointer: fine) {
+    button, [role="button"], [data-slot="select-trigger"], select { min-height: 32px; }
+    select { padding: 0.25rem 0.5rem; }
+    table button, table a { min-height: 28px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }

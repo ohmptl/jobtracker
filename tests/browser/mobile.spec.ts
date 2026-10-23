@@ -71,6 +71,7 @@ for (const width of [320, 375, 390, 430, 768, 1440]) {
         ),
       )
       .toBe(true);
+    await page.getByText("Other stages", { exact: true }).click();
     await page
       .getByRole("combobox", {
         name: "Move 2027 New Graduate Silicon Validation Engineer to stage",
@@ -107,7 +108,7 @@ for (const width of [320, 375, 390, 430, 768, 1440]) {
       .poll(() => calls.some((c) => c.operation === "restore_job"))
       .toBe(true);
     await page.getByRole("button", { name: "deleted", exact: true }).click();
-    await expect(page.getByText(/days remaining/)).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Recovery deadline (UTC)" })).toBeVisible();
     await page.getByRole("button", { name: "Restore", exact: true }).click();
     await page.getByRole("button", { name: "feed", exact: true }).click();
     await page.getByText("View affected jobs", { exact: true }).click();
@@ -128,12 +129,38 @@ for (const width of [320, 375, 390, 430, 768, 1440]) {
     }
     await page.getByRole("button", { name: "settings", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: /Cleanup policy/ }),
+      page.getByRole("heading", { name: /Connected client permissions/ }),
     ).toBeVisible();
+    await expect(page.getByText(/Cleanup policy|Protected companies/)).toHaveCount(0);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+  });
+}
+
+for (const width of [320, 375, 390, 430, 768, 1440]) {
+  test(`dense applications table at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 850 });
+    const updates: object[] = [];
+    await page.route("**/api/tracker", async route => {
+      const body = route.request().postDataJSON();
+      updates.push(body);
+      await route.fulfill({ json: body.operation === "list_jobs" ? { jobs: [], total: 0, has_more: false, next_cursor: null } : { ok: true } });
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "applications", exact: true }).click();
+    await expect(page.getByRole("table")).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Company", exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Applied", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Actions for 2027 New Graduate Silicon Validation Engineer" }).click();
+    await page.getByRole("menuitem", { name: "Edit details / notes" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByLabel("Notes", { exact: true }).fill("Dense table notes");
+    await page.getByRole("button", { name: "Save Changes" }).click();
+    await expect.poll(() => updates.some((u) => JSON.stringify(u).includes('Dense table notes'))).toBe(true);
+    await expect(page.getByRole("dialog")).not.toBeVisible();
   });
 }

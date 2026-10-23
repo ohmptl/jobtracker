@@ -11,34 +11,29 @@ export default async function ResearchPage({
   const deleted = view === "deleted";
   const db = await createClient();
   const page = await execute({ db }, "list_jobs", {
-    statuses: deleted ? ["jobs_deleted"] : ["jobs_found", "jobs_snoozed"],
+    statuses: deleted ? ["jobs_deleted"] : ["jobs_found"],
     page_size: 30,
   });
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">
+    <div className="space-y-3">
+      <h1 className="text-2xl font-semibold">
         {deleted ? "Deleted" : "Jobs Found"}
       </h1>
-      <p className="text-muted-foreground">
-        {deleted
-          ? "Recover removed opportunities for 30 days."
-          : "Review engineering roles for your 2027 career step."}
-      </p>
-      <nav className="flex flex-wrap gap-4">
+      <nav className="flex flex-wrap gap-3 text-sm">
         <Link
-          className="min-h-11 rounded-lg border px-4 py-3"
+          className="rounded-md border px-3 py-2"
           href="/dashboard/research"
         >
-          Jobs Found / Snoozed
+          Review opportunities
         </Link>
         <Link
-          className="min-h-11 rounded-lg border px-4 py-3"
+          className="rounded-md border px-3 py-2"
           href="/dashboard/research?view=deleted"
         >
           Deleted
         </Link>
         <Link
-          className="min-h-11 rounded-lg border px-4 py-3"
+          className="rounded-md border px-3 py-2"
           href="/dashboard/cleanup"
         >
           Cleanup review

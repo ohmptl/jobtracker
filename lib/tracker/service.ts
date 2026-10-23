@@ -6,7 +6,7 @@ import {
   type Operation,
 } from "./schemas";
 
-export type TrackerContext = { db: SupabaseClient; legacyOwner?: string };
+export type TrackerContext = { db: SupabaseClient };
 export async function execute(
   ctx: TrackerContext,
   operation: Operation,
@@ -71,13 +71,7 @@ export async function execute(
     args = { ...args, jobs };
     if (!jobs.length) return { results: invalid };
   }
-  const { data, error } = ctx.legacyOwner
-    ? await ctx.db.rpc("tracker_legacy", {
-        owner_id: ctx.legacyOwner,
-        operation,
-        args,
-      })
-    : await ctx.db.rpc("tracker_api", { operation, args });
+  const { data, error } = await ctx.db.rpc("tracker_api", { operation, args });
   if (error) throw new Error(error.message);
   if (operation === "list_jobs") return { ...data, count: data.jobs.length };
   if (operation === "add_job_found") {

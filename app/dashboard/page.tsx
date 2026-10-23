@@ -16,13 +16,10 @@ export default async function DashboardPage() {
     page_size: 30,
   });
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold">Applications</h1>
-          <p className="mt-2 text-muted-foreground">
-            Your next action, from first application to offer.
-          </p>
+          <h1 className="text-2xl font-semibold">Applications</h1>
         </div>
         <AddJobDialog />
       </div>

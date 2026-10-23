@@ -6,17 +6,20 @@ MCP management API. This upgrade preserves the existing Next.js/Vercel stack.
 - Jobs Found, Snoozed, Deleted and the existing application pipeline.
 - Recoverable deletion for exactly 30 days, protected companies/jobs and versioned cleanup.
 - Paginated search, bulk ingestion/removal, duplicate checks and database-side analytics.
-- Supabase-native OAuth consent and per-client permissions, with a staged legacy bridge.
-- Persistent activity Feed, source summaries and mobile job cards.
+- Supabase-native OAuth consent and per-client permissions.
+- Dense application rows, a single-job approval queue, Feed and source summaries.
 - Daily retention and allowlisted, conservative posting verification.
 
 ## Status and documentation
 
-Live at **https://job.ohmptl.com**. Five additive migrations are applied; all
+Live at **https://job.ohmptl.com**. Six additive migrations are applied; all
 1,130 original jobs are preserved. Hosted browser, native OAuth/PKCE, SDK MCP,
 revocation, isolation and concurrent restore/purge checks passed with synthetic
 fixtures. Reconnect AI clients to `https://job.ohmptl.com/mcp` using OAuth.
-The existing URL-token connection expires **2026-10-31 at 00:00 UTC**.
+MCP uses OAuth exclusively. The old token route, hosting variables, database
+bridge/grants and token-bearing historical deployments have been removed.
+Settings contains connection permissions and activity privacy; tell your agent
+your job preferences in conversation.
 
 - [Implementation and validation report](docs/DELIVERY.md)
 - [Deployment, OAuth setup, reconnection and rollback](docs/DEPLOYMENT.md)

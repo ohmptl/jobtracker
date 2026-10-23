@@ -38,7 +38,7 @@ const initialPage: JobPage = {
   next_cursor: null,
 };
 function Harness() {
-  const [tab, setTab] = useState<"jobs" | "deleted" | "feed" | "settings">(
+  const [tab, setTab] = useState<"jobs" | "applications" | "deleted" | "feed" | "settings">(
     "jobs",
   );
   const [deleted] = useState(() => ({
@@ -55,7 +55,7 @@ function Harness() {
           <div className="mx-auto max-w-[1600px] space-y-5 p-4">
             <h1 className="text-3xl font-semibold">Job Tracker</h1>
             <nav className="flex flex-wrap gap-2">
-              {(["jobs", "deleted", "feed", "settings"] as const).map((t) => (
+              {(["jobs", "applications", "deleted", "feed", "settings"] as const).map((t) => (
                 <button
                   className="min-h-11 rounded-lg border px-4"
                   key={t}
@@ -68,6 +68,7 @@ function Harness() {
             {tab === "jobs" && (
               <JobBrowser key="jobs" initialPage={initialPage} />
             )}
+            {tab === "applications" && <JobBrowser key="applications" initialPage={{ ...initialPage, jobs: [{ ...job, status: "to_apply" }] }} view="applications" />}
             {tab === "deleted" && (
               <JobBrowser
                 key="deleted"
@@ -103,23 +104,6 @@ function Harness() {
             {tab === "settings" && (
               <TrackerSettings
                 initialSettings={{
-                  policy: {
-                    version: 1,
-                    ai_deletion: true,
-                    automatic_expiration: true,
-                    tombstone_days: 120,
-                    technical_domains: ["ASIC", "FPGA"],
-                    internship_standard:
-                      "Preserve strategic hardware internships",
-                  },
-                  companies: [
-                    {
-                      id: "registry1",
-                      name: "NVIDIA",
-                      aliases: ["Nvidia Corporation"],
-                      protected: true,
-                    },
-                  ],
                   clients: [],
                 }}
               />

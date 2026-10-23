@@ -14,8 +14,8 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-svh bg-muted/20">
       <DashboardSidebar email={data.user.email} />
-      <main className="min-h-svh pt-16 md:pl-64 md:pt-0">
-        <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">
+      <main className="min-h-svh pt-16 md:pl-56 md:pt-0">
+        <div className="mx-auto w-full p-3 sm:p-4 lg:p-5">
           {children}
         </div>
       </main>

@@ -3,22 +3,21 @@
 ## Deployment status — 2026-10-23
 
 **Live: https://job.ohmptl.com. OAuth MCP: https://job.ohmptl.com/mcp.**
-Production deployment `dpl_73eYqTiM51xrgAUD6BJ2nGscjvCn`
-(`job-gfqwrh7yp-ohmptls-projects.vercel.app`) was built and promoted to the existing
-custom domain. Supabase project `cpwcusyinnsstcirxaom` has five migrations applied.
+The production build is promoted to the existing custom domain. Supabase project
+`cpwcusyinnsstcirxaom` has six migrations applied. Older token-bearing deployment
+snapshots were removed; use the current OAuth-only artifact for rollback.
 Native OAuth, S256 PKCE, public-client dynamic registration, the resource-audience
 hook and refresh/revocation work. No signing keys or account credentials rotated.
 
-The current ChatGPT legacy connection still lists jobs successfully. Its cached
-tool schema requires refresh/reconnection; the new server returns 50 bounded
-rows, full `total=1130`, `has_more=true` and a cursor. The original `dismissed`
+MCP now uses OAuth exclusively; the new server returns 50 bounded rows, full
+`total=1130`, `has_more=true` and a cursor. The original `dismissed`
 input now reaches recoverable Deleted through the production SDK endpoint.
 
 **User action:** reconnect each actual AI client and daily workflow using OAuth,
-confirm selected permissions, and refresh tool discovery. The old URL-token bridge
-expires **2026-10-31 00:00 UTC (October 30, 8 pm EDT)**. After owner reconnection,
-disable the bridge and remove/rotate its MCP secret. Owner consent/workflow
-changes were not performed or simulated.
+confirm selected permissions, and refresh tool discovery. At the owner's request,
+the old token route, database bridge, stored grants, four hosting configuration
+variables and six historical token-bearing deployments were removed. Owner
+consent/workflow changes were not performed or simulated.
 
 ## Implemented behavior
 
@@ -29,7 +28,7 @@ changes were not performed or simulated.
 | Cleanup | Versioned policies, protected companies/aliases/jobs, revision-bound 15-minute previews, atomic execution, exact 720-hour recovery and compact suppression tombstones. Application stages excluded from automation. |
 | Verification | Bounded scheduled checks of six exact authoritative ATS hosts; pinned public DNS/TLS, HTTPS/redirect/time/size limits. Blocked, timeout and weak evidence remain uncertain. |
 | Feed | Transactional audit, immutable client identity, owner labels, minimal snapshots, batch grouping, filtering, pagination and stable links. Historical actors are not invented. |
-| Web | Mobile cards, filters, details/notes, protection, stage controls, remove/undo/restore, Deleted deadline, Feed, settings, workflow dates and full-database analytics. |
+| Web | Dense application rows; single-job approval with Coming up queue; New/Snoozed feeds; details/notes, stage controls, remove/undo/restore, Deleted deadlines, Feed and analytics. Settings contains only connections and activity privacy. |
 | Operations | Additive migrations, CI checks, generated MCP schemas, rollback guide, active retention cron and operator health command. |
 
 The existing Next.js/Vercel/Supabase architecture remains. Browsers use Auth cookies
@@ -51,6 +50,9 @@ rolled-back transactions before CLI application. The fifth explicitly casts a
 JSON default to clear a lint warning, preserving function permissions/behavior.
 The old MCP service-role deployment received a guarded, audited compatibility
 path during cutover. Add a new migration for further SQL changes.
+Migration six removes that compatibility path and the service-only bridge; audit
+history is retained. Employer/policy forms are removed from Settings; backend
+protection and retention safeguards continue to enforce lifecycle rules.
 
 Final comparison confirmed **1,130 original IDs and original field values**:
 owners, stages, notes, company/title, URLs, added/applied dates. Only `updated_at`
@@ -73,7 +75,7 @@ registrations were removed; one original Auth user remains.
 
 ## Verification results
 
-- **Local:** 24 Node and six Playwright tests pass; ESLint, TypeScript and Vercel
+- **Local:** 24 Node and 12 Playwright tests pass; ESLint, TypeScript and Vercel
   production build pass. Coverage includes 10,000 jobs, a complete 1,105-record
   tied-date cursor walk, status compatibility, ingestion retries, audit, RLS/grants,
   protection, policy/revision races, verification and exact retention boundaries.
@@ -81,6 +83,10 @@ registrations were removed; one original Auth user remains.
   remove/undo, Deleted deadline/restore, owner stage change, Feed, settings and
   analytics pass. Pages fit 320, 375, 390, 430, 768 and 1440 px; mobile navigation
   closes with Escape. No uncaught JavaScript errors. No physical iOS/Android tests.
+  The revised application table was verified with 14 synthetic rows at 41px each,
+  real stage/note edits and guarded remove/undo. Review approval advances the
+  featured job, Snooze/New switches correctly, and Deleted restores correctly.
+  Table/review/settings fit all six widths. Old token URLs return 404.
 - **Hosted OAuth:** public DCR, wrong-verifier rejection, real browser consent/303
   redirect and code exchange, signed client/resource claims, PostgREST access,
   refresh and native grant/refresh revocation pass. The actual consent response's
@@ -113,7 +119,8 @@ authenticated GraphQL-schema visibility notices for RLS-protected tables, two
 intentional authenticated SECURITY DEFINER RPCs with explicit identity/grant
 checks, and existing disabled leaked-password protection. This is not a clean
 security report. No anonymous/public table exposure warning returned. Provider
-firewall rules and paid Auth features were unchanged. Remote CI was not observed.
+firewall rules and paid Auth features were unchanged. See the repository's Actions
+tab for the validation workflow on the synchronized commit.
 
 ## Scheduling, monitoring and cleanup readiness
 

@@ -1,15 +1,16 @@
 # Deployment, OAuth cutover and recovery
 
-**Production is live at https://job.ohmptl.com** as of 2026-10-23. Five migrations,
+**Production is live at https://job.ohmptl.com** as of 2026-10-23. Six migrations,
 native OAuth/PKCE/DCR, resource-audience claims, actual browser consent, SDK MCP,
 refresh/revocation, isolation and concurrent restore/purge passed with synthetic
 fixtures. All 1,130 original jobs remain intact. See [DELIVERY.md](DELIVERY.md)
 for exact evidence and limitations.
 
 The owner must reconnect actual AI clients/daily workflows to
-`https://job.ohmptl.com/mcp` using OAuth. Legacy access remains usable until
-**2026-10-31 00:00 UTC**; its existing secret has not been rotated. Review
-protection/policy previews and observe the first scheduled runs before broad pruning.
+`https://job.ohmptl.com/mcp` using OAuth. URL-token access is removed: the route,
+database bridge, grant records, hosting variables and six token-bearing historical
+deployments are gone. Review policy previews before broad pruning. Settings now
+contains OAuth connections and activity privacy; preferences are expressed to agents.
 
 ## Current operator environment
 
@@ -81,9 +82,10 @@ pnpm exec supabase db advisors --linked
 ```
 
 Review migration history before pushing; resolve history drift explicitly.
-The five migrations add the model/RPCs, register daily pg_cron maintenance,
+The six migrations add the model/RPCs, register daily pg_cron maintenance,
 provide the access-token hook, add service-only verification RPCs, and make a
-JSON default cast explicit without changing the dispatcher's grants or behavior.
+JSON default cast explicit without changing the dispatcher's grants or behavior,
+and retire the temporary MCP token bridge without deleting jobs or audit history.
 No application tables are dropped. The old URL-only unique index becomes a
 nonunique index because distinct requisitions may share a landing URL.
 Legacy `dismissed` rows, if present, become `jobs_deleted`. Existing Deleted
@@ -119,9 +121,9 @@ temporary schedule was removed; first regular daily execution is pending.
 Copy `.env.example` into the deployment's secret store. Required public values:
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Required canonical
 application value: `APP_URL=https://<your-actual-host>` (no path or trailing slash).
-Keep `MCP_OAUTH_ENABLED=false` and the legacy credentials unchanged initially.
-The service-role key stays server-only for the temporary legacy bridge and
-scheduled verification. OAuth requests never use it.
+Keep `MCP_OAUTH_ENABLED=false` until the provider is configured and validated.
+The service-role key stays server-only for scheduled verification. OAuth requests
+never use it. No token/owner/legacy environment variables are required.
 
 Set exact `EXTENSION_ALLOWED_ORIGINS` for the installed Chrome extension ID and
 any explicitly trusted site. Arbitrary reflected credentialed CORS is disabled.
@@ -229,7 +231,7 @@ MCP, direct REST, functions or Feed. Verify a read-only grant cannot mutate,
 missing delete permission fails, protection cannot be bypassed by renaming a
 company, and revoked/expired tokens fail.
 
-## 5. Real-client reconnection and legacy retirement
+## 5. Real-client reconnection
 
 1. In ChatGPT's connector/app creation UI, create a separate test MCP connection
    to `https://<actual-app-host>/mcp` with OAuth. Complete sign-in and consent.
@@ -248,13 +250,10 @@ company, and revoked/expired tokens fail.
    and provider features passed. These tests cannot be substituted by unit tests.
 6. Repeat the verified configuration in production. Repoint daily discovery
    workflows to the new connection. Confirm scheduled tools still work.
-7. Production already has `MCP_LEGACY_DISABLE_AFTER=2026-10-31T00:00:00Z`.
-   Complete reconnection before that deadline. At cutover set
-   `MCP_LEGACY_ENABLED=false`, remove/rotate `MCP_SECRET` and remove old client
-   connection URLs. Revoke the `legacy-url-token` client grant. Remove
-   `MCP_USER_ID` when retiring the bridge. Do not leave dual authentication
-   running without a recorded deadline. Retain the service role only if the
-   scheduled verifier is enabled.
+7. Remove obsolete URL-token connections from client configuration. Their
+   server route, stored grants, environment variables and historical deployment
+   snapshots have already been removed. Retain the server-only service role
+   solely for the scheduled verifier.
 
 Client configuration labels vary over time. The stable reconnection contract is
 the `/mcp` HTTPS endpoint, OAuth discovery, native consent, and explicit app grants.
@@ -268,8 +267,8 @@ select cron.unschedule(jobid) from cron.job where jobname='jobtracker-daily-main
 ```
 
 Disable Vercel verification cron and set `MCP_OAUTH_ENABLED=false` if OAuth fails.
-Restore legacy access only while its secret is still valid and within the
-documented migration window. Prefer a forward fix; do not run the old reset
+Use an OAuth-only build for application rollback; removed token-bearing artifacts
+are unavailable and token access must not be reintroduced. Prefer a forward fix; do not run the old reset
 script or drop added tables. Do not roll back to the old frontend's permanent
 delete behavior; database grants intentionally block it. Before downgrading
 roles/status schemas, inspect new data for values older code cannot handle.

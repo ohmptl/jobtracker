@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { ApplicationRows, ReviewQueue } from "@/components/job-views";
 import { EditJobDialog } from "@/components/edit-job-dialog";
 import { tracker } from "@/lib/tracker/browser";
-import { statuses, type Job } from "@/lib/tracker/schemas";
-import { formatUtc } from "@/lib/tracker/dates";
+import { type Job } from "@/lib/tracker/schemas";
 
 export type JobPage = {
   jobs: Job[];
@@ -17,7 +16,7 @@ export type JobPage = {
 };
 const label = (s: string) => s.replace(/^jobs_/, "").replaceAll("_", " ");
 const defaultStatuses = {
-  research: ["jobs_found", "jobs_snoozed"],
+  research: ["jobs_found"],
   applications: [
     "to_apply",
     "applied",
@@ -32,12 +31,15 @@ const defaultStatuses = {
 export function JobBrowser({
   initialPage,
   view = "research",
+  detail = false,
 }: {
   initialPage: JobPage;
   view?: keyof typeof defaultStatuses;
+  detail?: boolean;
 }) {
   const [page, setPage] = useState(initialPage);
-  const [now] = useState(() => Date.now());
+  const [feed, setFeed] = useState("jobs_found");
+  const viewStatuses = view === "research" ? [feed] : defaultStatuses[view];
   const [filters, setFilters] = useState<Record<string, unknown>>({
     statuses: defaultStatuses[view],
     page_size: 30,
@@ -52,6 +54,11 @@ export function JobBrowser({
     setPending(true);
     setError("");
     try {
+      if (detail) {
+        const result = await tracker("get_job", { id: initialPage.jobs[0].id });
+        setPage({ ...initialPage, jobs: [result.job] });
+        return;
+      }
       setPage(
         await tracker("list_jobs", {
           ...args,
@@ -74,8 +81,10 @@ export function JobBrowser({
     try {
       await tracker(operation, args);
       await load(filters, cursor);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to update job");
+      return false;
     } finally {
       setPending(false);
     }
@@ -85,7 +94,7 @@ export function JobBrowser({
       page_size: 30,
       statuses: form.get("status")
         ? [form.get("status")]
-        : defaultStatuses[view],
+        : viewStatuses,
     };
     for (const key of [
       "q",
@@ -113,27 +122,27 @@ export function JobBrowser({
       job.protected ||
       job.company_protected ||
       !["jobs_found", "jobs_snoozed"].includes(job.status);
-    if (
+    if (guarded &&
       !window.confirm(
         `${guarded ? "Intentionally override protection and move" : "Move"} ${job.position} at ${job.company} to Deleted? Recoverable for 30 days.`,
       )
     )
       return;
-    await mutate("remove_job", {
+    const removed = await mutate("remove_job", {
       id: job.id,
-      reason: "Owner removed via job card",
+      reason: "Owner removed via tracker",
       override_protection: guarded,
     });
-    setUndo(job.id);
+    if (removed) setUndo(job.id);
   }
   return (
-    <div className="space-y-5" aria-busy={pending}>
-      <form
+    <div className="min-w-0 space-y-3" aria-busy={pending}>
+      {!detail && <form
         onSubmit={(e) => {
           e.preventDefault();
           void filter(new FormData(e.currentTarget));
         }}
-        className="space-y-3 rounded-xl border bg-card p-4"
+        className="space-y-2 rounded-lg border bg-card p-3"
       >
         <div className="flex flex-col gap-3 sm:flex-row">
           <Input
@@ -146,7 +155,7 @@ export function JobBrowser({
           </Button>
         </div>
         <details>
-          <summary className="min-h-11 cursor-pointer py-3 font-medium">
+          <summary className="cursor-pointer py-1 text-sm font-medium">
             Filters
           </summary>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -156,7 +165,7 @@ export function JobBrowser({
                 <Input name={name} />
               </label>
             ))}
-            <label>
+            {view !== "research" && <label>
               Status
               <select name="status" aria-label="Status filter">
                 <option value="">All in this view</option>
@@ -166,7 +175,7 @@ export function JobBrowser({
                   </option>
                 ))}
               </select>
-            </label>
+            </label>}
             <label>
               Role type
               <select name="role_type">
@@ -230,14 +239,13 @@ export function JobBrowser({
               </select>
             </label>
           </div>
-        </details>
-        <div className="flex flex-wrap gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           <Button
             type="reset"
             variant="outline"
             disabled={pending}
             onClick={() => {
-              const next = { statuses: defaultStatuses[view], page_size: 30 };
+              const next = { statuses: viewStatuses, page_size: 30 };
               setFilters(next);
               setHistory([]);
               void load(next);
@@ -266,7 +274,11 @@ export function JobBrowser({
             Use saved filters
           </Button>
         </div>
-      </form>
+        </details>
+      </form>}
+      {view === "research" && !detail && <div className="flex gap-2" aria-label="Review feeds">
+        {[["jobs_found", "New jobs"], ["jobs_snoozed", "Snoozed"]].map(([status, title]) => <Button key={status} size="sm" variant={feed === status ? "default" : "outline"} disabled={pending} onClick={() => { setFeed(status); const next = { ...filters, statuses: [status] }; setFilters(next); setHistory([]); void load(next); }}>{title}</Button>)}
+      </div>}
       {error && (
         <p
           role="alert"
@@ -293,163 +305,18 @@ export function JobBrowser({
           </Button>
         </div>
       )}
-      <p className="text-sm text-muted-foreground">
-        {page.total.toLocaleString()} matching opportunities · newest first
-      </p>
-      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-        {page.jobs.map((job) => (
-          <article
-            key={job.id}
-            id={job.id}
-            className="min-w-0 space-y-4 rounded-xl border bg-card p-4 sm:p-5"
-          >
-            <div className="space-y-1">
-              <p className="font-medium text-muted-foreground">{job.company}</p>
-              <h2 className="break-words text-lg font-semibold">
-                {job.position}
-              </h2>
-              <p className="text-sm">
-                {job.location || "Location not provided"}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">{label(job.status)}</Badge>
-              <Badge variant="outline">{label(job.role_type)}</Badge>
-              <Badge variant="outline">{label(job.priority)}</Badge>
-              <Badge variant="outline">{label(job.availability)}</Badge>
-              {job.next_action_at && Date.parse(job.next_action_at) <= now && (
-                <Badge>Next action due</Badge>
-              )}
-              {(job.protected || job.company_protected) && (
-                <Badge>
-                  Protected{job.company_protected ? " company" : ""}
-                </Badge>
-              )}
-            </div>
-            {job.status === "jobs_deleted" && (
-              <p className="rounded-lg bg-muted p-3 text-sm">
-                Restore before{" "}
-                <time dateTime={job.purge_after || ""}>
-                  {job.purge_after
-                    ? formatUtc(job.purge_after)
-                    : "retention date unavailable"}
-                </time>
-                .{" "}
-                {job.purge_after
-                  ? `${Math.max(0, Math.ceil((Date.parse(job.purge_after) - now) / 86400000))} days remaining.`
-                  : ""}
-              </p>
-            )}
-            <details>
-              <summary className="min-h-11 cursor-pointer py-3 font-medium">
-                Full details
-              </summary>
-              <dl className="space-y-2 break-words text-sm">
-                <dt>Notes</dt>
-                <dd className="whitespace-pre-wrap text-muted-foreground">
-                  {job.notes || "No notes"}
-                </dd>
-                <dt>Salary</dt>
-                <dd>{job.salary || "Not provided"}</dd>
-                <dt>Evaluation</dt>
-                <dd>{job.evaluation_reason || "Not evaluated"}</dd>
-                <dt>Added</dt>
-                <dd>{formatUtc(job.added_date)}</dd>
-                <dt>Requisition</dt>
-                <dd>{job.requisition_id || "Unknown"}</dd>
-                <dt>Last verified</dt>
-                <dd>
-                  {job.last_verified_at
-                    ? formatUtc(job.last_verified_at)
-                    : "Not checked"}
-                </dd>
-                <dt>Review flags</dt>
-                <dd>{job.review_flags?.join(", ") || "None"}</dd>
-                <dt>Next action</dt>
-                <dd>
-                  {job.next_action_at
-                    ? formatUtc(job.next_action_at)
-                    : "Not set"}
-                </dd>
-              </dl>
-            </details>
-            <div className="flex flex-wrap gap-2">
-              {job.url && /^https?:\/\//i.test(job.url) && (
-                <Button variant="outline" asChild>
-                  <a href={job.url} target="_blank" rel="noreferrer">
-                    Open posting
-                  </a>
-                </Button>
-              )}
-              {job.status === "jobs_deleted" ? (
-                <Button
-                  disabled={pending}
-                  onClick={() => mutate("restore_job", { id: job.id })}
-                >
-                  Restore
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => setEditing(job)}
-                  >
-                    Edit details / notes
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() =>
-                      mutate("update_job", {
-                        id: job.id,
-                        protected: !job.protected,
-                      })
-                    }
-                  >
-                    {job.protected ? "Unprotect job" : "Protect job"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => remove(job)}
-                  >
-                    Remove
-                  </Button>
-                  <label className="w-full text-sm">
-                    Move to stage
-                    <select
-                      aria-label={`Move ${job.position} to stage`}
-                      disabled={pending}
-                      value={job.status}
-                      onChange={(e) =>
-                        mutate("update_job", {
-                          id: job.id,
-                          status: e.target.value,
-                        })
-                      }
-                    >
-                      {statuses
-                        .filter((s) => s !== "jobs_deleted")
-                        .map((s) => (
-                          <option key={s} value={s}>
-                            {label(s)}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                </>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
+      {!detail && <p className="text-xs text-muted-foreground">
+        {page.total.toLocaleString()} matching opportunities
+      </p>}
+      {page.jobs.length > 0 && (view === "research" || detail
+        ? <ReviewQueue jobs={page.jobs} pending={pending} edit={setEditing} remove={(job) => void remove(job)} mutate={mutate} />
+        : <ApplicationRows jobs={page.jobs} deleted={view === "deleted"} pending={pending} edit={setEditing} remove={(job) => void remove(job)} mutate={mutate} />)}
       {!page.jobs.length && (
         <p className="rounded-xl border border-dashed p-8 text-center">
           No opportunities match these filters.
         </p>
       )}
-      <div className="flex items-center justify-between gap-3">
+      {!detail && <div className="flex items-center justify-between gap-3">
         <Button
           disabled={pending || !history.length}
           variant="outline"
@@ -471,7 +338,7 @@ export function JobBrowser({
         >
           Next page
         </Button>
-      </div>
+      </div>}
       {editing && (
         <EditJobDialog
           job={{

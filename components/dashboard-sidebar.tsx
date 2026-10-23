@@ -90,7 +90,7 @@ export function DashboardSidebar({ email }: { email?: string }) {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-background md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r bg-background md:flex">
         {content}
       </aside>
 
